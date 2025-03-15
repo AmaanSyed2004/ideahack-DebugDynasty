@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+
+// Helper to convert an uploaded file to a data URL
+function convertFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function Signup() {
   const navigate = useNavigate();
@@ -12,8 +21,8 @@ function Signup() {
     password: '',
     aadhaarNumber: '',
     panNumber: '',
-    passportPhoto: null,
-    capturedPhoto: null,
+    passportPhoto: null,   // uploaded file
+    capturedPhoto: null,   // live capture (data URL)
     audioRecording: null,
   });
   const [errors, setErrors] = useState({});
@@ -21,7 +30,6 @@ function Signup() {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -59,16 +67,16 @@ function Signup() {
       default:
         break;
     }
-    setErrors((prev) => ({ ...prev, [name]: error }));
+    setErrors(prev => ({ ...prev, [name]: error }));
     return error;
   };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
-      setFormData({ ...formData, [name]: files[0] });
+      setFormData(prev => ({ ...prev, [name]: files[0] }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -77,7 +85,7 @@ function Signup() {
     validateField(name, value);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       const err1 = validateField('fullNameAadhaar', formData.fullNameAadhaar);
       const err2 = validateField('mobile', formData.mobile);
@@ -92,21 +100,14 @@ function Signup() {
     }
     if (step === 3) {
       if (!formData.passportPhoto && !formData.capturedPhoto) {
-        setErrors((prev) => ({
-          ...prev,
-          passportPhoto: "Please provide a passport photo or capture one.",
-        }));
+        setErrors(prev => ({ ...prev, passportPhoto: "Please provide a passport photo or capture one." }));
         return;
       }
       if (!audioURL) {
-        setErrors((prev) => ({
-          ...prev,
-          audioRecording: "Please record audio as instructed.",
-        }));
+        setErrors(prev => ({ ...prev, audioRecording: "Please record audio as instructed." }));
         return;
       }
-      // attach the audio to form data
-      setFormData((prev) => ({ ...prev, audioRecording: audioURL }));
+      setFormData(prev => ({ ...prev, audioRecording: audioURL }));
     }
     setStep(step + 1);
   };
@@ -118,29 +119,34 @@ function Signup() {
   };
 
   const handleSubmit = async () => {
-    try {
-      // Example POST call
-      await axios.post('/api/signup', formData);
-      navigate('/');
-    } catch (error) {
-      console.error('Signup failed', error);
+    let photoDataUrl = formData.capturedPhoto;
+    if (!photoDataUrl && formData.passportPhoto) {
+      photoDataUrl = await convertFileToDataUrl(formData.passportPhoto);
     }
+    console.log("Signup Form Data:", formData);
+    console.log("Photo to Send (Data URL):", photoDataUrl);
+    console.log("Audio Recording URL:", audioURL);
+    // Dummy axios call placeholder:
+    // axios.post('/api/signup', { ...formData, photo: photoDataUrl })
+    //   .then(response => console.log(response))
+    //   .catch(error => console.error(error));
+    navigate('/');
   };
 
-  // --- Audio Recording Functions ---
+  // Audio Recording Functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+      let chunks = [];
       mediaRecorderRef.current.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
+        chunks.push(e.data);
       };
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach(track => track.stop());
       };
       mediaRecorderRef.current.start();
       setRecording(true);
@@ -160,7 +166,7 @@ function Signup() {
     setAudioURL(null);
   };
 
-  // --- Live Photo Capture Functions ---
+  // Live Photo Capture Functions
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -178,7 +184,7 @@ function Signup() {
     }
     return () => {
       if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach(track => track.stop());
       }
     };
   }, [isCapturing, formData.capturedPhoto]);
@@ -192,45 +198,36 @@ function Signup() {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/png');
-      setFormData((prev) => ({ ...prev, capturedPhoto: dataUrl }));
+      setFormData(prev => ({ ...prev, capturedPhoto: dataUrl }));
       setIsCapturing(false);
       if (video.srcObject) {
-        video.srcObject.getTracks().forEach((track) => track.stop());
+        video.srcObject.getTracks().forEach(track => track.stop());
       }
     }
   };
 
   const handleRedoPhoto = () => {
-    setFormData((prev) => ({ ...prev, capturedPhoto: null }));
+    setFormData(prev => ({ ...prev, capturedPhoto: null }));
     setIsCapturing(true);
   };
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-50 to-red-50">
-      {/* Top branding + optional back/home button */}
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
-        <button
-          onClick={() => navigate('/')}
-          className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md"
-        >
+        <button onClick={() => navigate('/')} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
           Back to Home
         </button>
       </div>
-
-      {/* Centered form container with slightly smaller min-height */}
       <div className="flex-1 flex items-center justify-center">
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] p-12 min-h-[550px]">
           <h1 className="text-4xl font-bold text-center text-gradient mb-8">Sign Up</h1>
-
           {step === 1 && (
             <div>
               <h2 className="text-2xl font-semibold mb-4">Step 1: User Details Input</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">
-                    Full Name (as per Aadhaar/PAN)
-                  </label>
+                  <label className="block font-medium">Full Name (as per Aadhaar/PAN)</label>
                   <input
                     type="text"
                     name="fullNameAadhaar"
@@ -239,11 +236,7 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.fullNameAadhaar && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.fullNameAadhaar}
-                    </p>
-                  )}
+                  {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
                 </div>
                 <div>
                   <label className="block font-medium">Mobile Number</label>
@@ -255,11 +248,7 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.mobile && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.mobile}
-                    </p>
-                  )}
+                  {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
                 </div>
                 <div>
                   <label className="block font-medium">Email Address (optional)</label>
@@ -271,11 +260,7 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.email}
-                    </p>
-                  )}
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                 <div>
                   <label className="block font-medium">Set Password</label>
@@ -287,34 +272,22 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.password}
-                    </p>
-                  )}
+                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
-                <button
-                  onClick={handleNext}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                   Next →
                 </button>
               </div>
             </div>
           )}
-
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 2: Aadhaar & PAN Verification
-              </h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar & PAN Verification</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">
-                    Enter Aadhaar Number
-                  </label>
+                  <label className="block font-medium">Enter Aadhaar Number</label>
                   <input
                     type="text"
                     name="aadhaarNumber"
@@ -323,16 +296,10 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.aadhaarNumber && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.aadhaarNumber}
-                    </p>
-                  )}
+                  {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
                 </div>
                 <div>
-                  <label className="block font-medium">
-                    Enter PAN Number
-                  </label>
+                  <label className="block font-medium">Enter PAN Number</label>
                   <input
                     type="text"
                     name="panNumber"
@@ -341,41 +308,26 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.panNumber && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.panNumber}
-                    </p>
-                  )}
+                  {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button
-                  onClick={handlePrev}
-                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
                   ← Prev
                 </button>
-                <button
-                  onClick={handleVerify}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handleVerify} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                   Verify →
                 </button>
               </div>
             </div>
           )}
-
           {step === 3 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 3: Identity Authentication (Facial & Audio)
-              </h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 3: Identity Authentication (Facial & Audio)</h2>
               <div className="space-y-6">
                 {/* Photo Section */}
                 <div>
-                  <label className="block font-medium mb-2">
-                    Passport Photo or Live Photo
-                  </label>
+                  <label className="block font-medium mb-2">Passport Photo or Live Photo</label>
                   <div className="flex flex-col items-center space-y-4">
                     <input
                       type="file"
@@ -386,137 +338,79 @@ function Signup() {
                     />
                     <div className="w-full flex justify-center">
                       {!formData.capturedPhoto && !isCapturing ? (
-                        <button
-                          onClick={() => setIsCapturing(true)}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                        >
+                        <button onClick={() => setIsCapturing(true)} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                           Capture Live Photo
                         </button>
                       ) : isCapturing && !formData.capturedPhoto ? (
                         <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
-                          <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
+                          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                           <canvas ref={canvasRef} className="hidden" />
-                          <button
-                            onClick={handleCapturePhoto}
-                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                          >
+                          <button onClick={handleCapturePhoto} className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                             Capture
                           </button>
                         </div>
                       ) : (
                         <div className="relative w-full h-80 rounded-md overflow-hidden">
-                          <img
-                            src={formData.capturedPhoto}
-                            alt="Captured"
-                            className="w-full h-full object-cover"
-                          />
-                          <button
-                            onClick={handleRedoPhoto}
-                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                          >
+                          <img src={formData.capturedPhoto} alt="Captured" className="w-full h-full object-cover" />
+                          <button onClick={handleRedoPhoto} className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                             ReCapture
                           </button>
                         </div>
                       )}
                     </div>
-                    {errors.passportPhoto && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.passportPhoto}
-                      </p>
-                    )}
+                    {errors.passportPhoto && <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>}
                   </div>
                 </div>
-                {/* Audio Recording Section */}
+                {/* Audio Section */}
                 <div>
-                  <label className="block font-medium mb-2">
-                    Record Audio (Say the pre-decided phrase)
-                  </label>
+                  <label className="block font-medium mb-2">Record Audio (Say the pre-decided phrase)</label>
                   <div className="flex flex-col items-center space-y-3">
                     {!recording && !audioURL && (
-                      <button
-                        onClick={startRecording}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                      >
+                      <button onClick={startRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                         Record Audio
                       </button>
                     )}
                     {recording && (
-                      <button
-                        onClick={stopRecording}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                      >
+                      <button onClick={stopRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                         Stop Recording
                       </button>
                     )}
                     {audioURL && (
                       <div className="flex flex-col items-center space-y-2 w-full">
                         <audio src={audioURL} controls className="w-full" />
-                        <button
-                          onClick={handleRedoAudio}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                        >
+                        <button onClick={handleRedoAudio} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                           Re-record Audio
                         </button>
                       </div>
                     )}
-                    {errors.audioRecording && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.audioRecording}
-                      </p>
-                    )}
+                    {errors.audioRecording && <p className="text-red-500 text-sm mt-1">{errors.audioRecording}</p>}
                   </div>
                   <div className="mt-1">
-                    <p className="text-sm text-gray-600">
-                      Random Phrase: {randomPhrase}
-                    </p>
+                    <p className="text-sm text-gray-600">Random Phrase: {randomPhrase}</p>
                   </div>
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button
-                  onClick={handlePrev}
-                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
                   ← Prev
                 </button>
-                <button
-                  onClick={handleNext}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                   Next →
                 </button>
               </div>
             </div>
           )}
-
           {step === 4 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 4: Final Review & Submission
-              </h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 4: Final Review & Submission</h2>
               <div className="space-y-4 text-lg">
+                <p><strong>Full Name:</strong> {formData.fullNameAadhaar}</p>
+                <p><strong>Mobile Number:</strong> {formData.mobile}</p>
+                <p><strong>Email:</strong> {formData.email || 'Not Provided'}</p>
+                <p><strong>Aadhaar Number:</strong> {formData.aadhaarNumber}</p>
+                <p><strong>PAN Number:</strong> {formData.panNumber}</p>
                 <p>
-                  <strong>Full Name:</strong> {formData.fullNameAadhaar}
-                </p>
-                <p>
-                  <strong>Mobile Number:</strong> {formData.mobile}
-                </p>
-                <p>
-                  <strong>Email:</strong> {formData.email || 'Not Provided'}
-                </p>
-                <p>
-                  <strong>Aadhaar Number:</strong> {formData.aadhaarNumber}
-                </p>
-                <p>
-                  <strong>PAN Number:</strong> {formData.panNumber}
-                </p>
-                <p>
-                  <strong>Photo:</strong>{' '}
+                  <strong>Photo:</strong>{" "}
                   {formData.passportPhoto
                     ? formData.passportPhoto.name
                     : formData.capturedPhoto
@@ -524,21 +418,15 @@ function Signup() {
                     : 'Not Provided'}
                 </p>
                 <p>
-                  <strong>Audio Recording:</strong>{' '}
+                  <strong>Audio Recording:</strong>{" "}
                   {audioURL ? 'Recorded' : 'Not Provided'}
                 </p>
               </div>
               <div className="mt-8 flex justify-between">
-                <button
-                  onClick={handlePrev}
-                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
                   ← Prev
                 </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
-                >
+                <button onClick={handleSubmit} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
                   Confirm & Submit
                 </button>
               </div>
