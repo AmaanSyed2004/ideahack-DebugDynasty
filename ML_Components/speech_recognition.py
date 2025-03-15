@@ -6,8 +6,8 @@ from speechbrain.inference.speaker import SpeakerRecognition
 
 # ---------- Step 1: Update Your Audio File Paths ----------
 # ⚠️ Update these paths with the correct filenames you uploaded to Colab
-reference_audio_path = "voice_varnika.wav"  # Reference voice sample
-test_audio_path = "mom_voice.wav"  # Test voice sample
+reference_audio_path = ""  # Reference voice sample
+test_audio_path = ""  # Test voice sample
 
 # ---------- Step 2: Speaker Verification using Resemblyzer ----------
 
