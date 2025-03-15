@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import React from "react";
+import { ChevronRight } from "lucide-react";
 
 const FAQSection = React.forwardRef((props, ref) => {
   const faqItems = [
@@ -46,20 +46,23 @@ const FAQSection = React.forwardRef((props, ref) => {
   ];
 
   return (
-    <div ref={ref} className="py-20 bg-white">
+    <div ref={ref} className="py-20 bg-blue-50">
       <div className="container mx-auto px-6">
-        <h2 className="text-4xl font-bold text-center text-gradient mb-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-12 md:mb-16">
           Frequently Asked Questions
         </h2>
-        <div className="space-y-6 max-w-3xl mx-auto">
+        <div className="space-y-4 md:space-y-6 max-w-3xl mx-auto">
           {faqItems.map((item, index) => (
-            <div key={index} className="p-0.5 bg-gradient-to-r from-blue-300 to-red-300 rounded-2xl">
+            <div
+              key={index}
+              className="p-0.5 bg-gradient-to-r from-blue-300 to-red-300 rounded-2xl"
+            >
               <details className="group bg-white p-6 rounded-2xl shadow-md transition-all hover:shadow-lg">
-                <summary className="font-medium text-xl text-blue-900 cursor-pointer flex items-center justify-between">
+                <summary className="font-medium text-lg md:text-xl text-blue-900 cursor-pointer flex items-center justify-between">
                   {item.question}
                   <ChevronRight className="h-5 w-5 transform group-open:rotate-90 transition-transform" />
                 </summary>
-                <p className="mt-4 text-gray-600">
+                <p className="mt-4 text-gray-600 text-base md:text-lg">
                   {item.answer}
                 </p>
               </details>
@@ -70,5 +73,7 @@ const FAQSection = React.forwardRef((props, ref) => {
     </div>
   );
 });
+
+FAQSection.displayName = "FAQSection";
 
 export default FAQSection;
