@@ -28,7 +28,8 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-blue-50">
+
         <NavBar
           isScrolled={isScrolled}
           onScrollToHero={() => scrollToSection(heroRef)}

@@ -17,7 +17,7 @@ const HeroSection = React.forwardRef(({ onDiscoverMore }, ref) => {
   }, [hasAnimated]);
 
   return (
-    <div ref={ref} className="pt-32 pb-20 px-6 hero-gradient">
+    <div ref={ref} className="pt-32 pb-20 px-6 bg-blue-50 hero-section">
       <div className="container mx-auto">
         <div className="flex flex-col lg:flex-row items-center">
           <div
@@ -41,7 +41,7 @@ const HeroSection = React.forwardRef(({ onDiscoverMore }, ref) => {
               <ArrowRight className="ml-2 h-5 w-5 md:h-6 md:w-6 group-hover:translate-x-2 transition-transform" />
             </button>
           </div>
-          <div className="lg:w-1/2 mt-12 lg:mt-0">
+          <div className="lg:w-1/2 relative left-16 mt-12 lg:mt-0">
             <img
               src="https://img.freepik.com/free-vector/online-banking-concept-illustration_114360-13925.jpg"
               alt="Banking Interface"

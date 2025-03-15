@@ -22,11 +22,8 @@ function NavBar({
   };
 
   return (
-    <nav
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? "glass-effect shadow-lg" : "bg-white"
-      }`}
-    >
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"}`}>
+
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Brand Name */}
