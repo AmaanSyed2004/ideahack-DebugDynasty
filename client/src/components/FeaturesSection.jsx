@@ -1,48 +1,84 @@
 import React from 'react';
-import { Shield, Users, Building2 } from 'lucide-react';
+import { Calendar, Users, Shield, PhoneCall, Shield as Shield2, HelpCircle } from 'lucide-react';
 
 const FeaturesSection = React.forwardRef((props, ref) => {
   return (
     <div ref={ref} className="py-20 bg-gray-50">
       <div className="container mx-auto px-6">
         <h2 className="text-4xl font-bold text-center text-gradient mb-16">
-          Experience Next-Gen Banking
+          Advanced Features
         </h2>
         <div className="grid md:grid-cols-3 gap-10">
+          {/* Feature 1 */}
+          <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
+            <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
+              <Calendar className="h-12 w-12 text-blue-600" />
+            </div>
+            <h3 className="text-2xl font-semibold text-blue-900 mb-4">
+              Smart Scheduling & Ticketing
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              AI transcribes and categorizes customer queries, linking them with credit history for faster resolution.
+            </p>
+          </div>
+          {/* Feature 2 */}
+          <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
+            <div className="bg-green-50 p-4 rounded-2xl inline-block mb-6">
+              <Users className="h-12 w-12 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-semibold text-blue-900 mb-4">
+              Predictive Customer Engagement
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              Analyze customer sentiment to predict urgency and suggest proactive solutions.
+            </p>
+          </div>
+          {/* Feature 3 */}
           <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
             <div className="bg-red-50 p-4 rounded-2xl inline-block mb-6">
               <Shield className="h-12 w-12 text-red-600" />
             </div>
             <h3 className="text-2xl font-semibold text-blue-900 mb-4">
-              Fort Knox Security
+              Risk & Fraud Detection
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Bank with confidence using our military-grade encryption and
-              multi-layer security protocols.
+              Monitor transaction patterns to detect anomalies and prevent fraud.
             </p>
           </div>
+          {/* Feature 4 */}
           <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
-            <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
-              <Users className="h-12 w-12 text-blue-600" />
+            <div className="bg-purple-50 p-4 rounded-2xl inline-block mb-6">
+              <PhoneCall className="h-12 w-12 text-purple-600" />
             </div>
             <h3 className="text-2xl font-semibold text-blue-900 mb-4">
-              24/7 Expert Support
+              Rural Accessibility & Offline Support
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Our dedicated team of financial experts is always ready to assist
-              you, anytime, anywhere.
+              Ensure uninterrupted banking with local language support and offline query storage.
             </p>
           </div>
+          {/* Feature 5 */}
           <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
-            <div className="bg-red-50 p-4 rounded-2xl inline-block mb-6">
-              <Building2 className="h-12 w-12 text-red-600" />
+            <div className="bg-yellow-50 p-4 rounded-2xl inline-block mb-6">
+              <Shield2 className="h-12 w-12 text-yellow-600" />
             </div>
             <h3 className="text-2xl font-semibold text-blue-900 mb-4">
-              Pan-India Network
+              Advanced Facial Recognition & Spoof Prevention
             </h3>
             <p className="text-gray-600 leading-relaxed">
-              Access your accounts seamlessly across our vast network of branches
-              and digital platforms.
+              Secure authentication using Aadhaar-based facial recognition with liveness detection.
+            </p>
+          </div>
+          {/* Feature 6 */}
+          <div className="feature-card bg-white p-8 rounded-2xl shadow-lg">
+            <div className="bg-indigo-50 p-4 rounded-2xl inline-block mb-6">
+              <HelpCircle className="h-12 w-12 text-indigo-600" />
+            </div>
+            <h3 className="text-2xl font-semibold text-blue-900 mb-4">
+              Multi-Language Support & Smart Notifications
+            </h3>
+            <p className="text-gray-600 leading-relaxed">
+              Receive real-time notifications and feedback in multiple languages with smart suggestions.
             </p>
           </div>
         </div>

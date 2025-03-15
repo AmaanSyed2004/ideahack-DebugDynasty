@@ -1,17 +1,43 @@
 import React from 'react';
-import { Shield, LogIn, UserPlus, HelpCircle, Calendar } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
-function NavBar({ isScrolled, onScrollToFeatures, onScrollToQuery, onScrollToAppointment }) {
+// A reusable auth button component using Framer Motion for an underline animation
+function AuthButton({ to, icon: Icon, children, bgColor, hoverBgColor }) {
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'glass-effect shadow-lg' : 'bg-white'}`}>
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center transform hover:scale-105 transition-transform">
-            <Shield className="h-10 w-10 text-red-600 animate-pulse-slow" />
-            <span className="ml-2 text-3xl font-bold text-gradient">UBI Bharosa</span>
-          </div>
-          <div className="flex items-center space-x-8">
+    <Link
+      to={to}
+      className={`relative overflow-hidden flex items-center px-6 py-3 text-white rounded-full transition-all transform ${bgColor} ${hoverBgColor}`}
+    >
+      <div className="relative z-10 flex items-center">
+        {Icon && <Icon className="h-5 w-5 mr-2" />}
+        {children}
+      </div>
+      <motion.div
+        initial={{ width: 0 }}
+        whileHover={{ width: "100%" }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-red-600"
+      />
+    </Link>
+  );
+}
+
+function NavBar({ isScrolled, onScrollToFeatures, onScrollToAppointment, onScrollToFAQ }) {
+  return (
+    <nav
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        isScrolled ? "glass-effect shadow-lg" : "bg-white"
+      }`}
+    >
+      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        {/* Brand Name with "Bharosa" in Hindi */}
+        <div className="transform hover:scale-105 transition-transform">
+          <span className="text-3xl font-bold text-gradient">UBI भरोसा</span>
+        </div>
+        <div className="flex items-center">
+          <div className="flex items-center space-x-6">
             <button
               onClick={onScrollToFeatures}
               className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
@@ -19,33 +45,36 @@ function NavBar({ isScrolled, onScrollToFeatures, onScrollToQuery, onScrollToApp
               Features
             </button>
             <button
-              onClick={onScrollToQuery}
-              className="nav-link text-blue-900 hover:text-red-600 transition-colors flex items-center text-lg"
+              onClick={onScrollToAppointment}
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
             >
-              <HelpCircle className="h-5 w-5 mr-1" />
-              Query Resolution
+              Appointment
             </button>
             <button
-              onClick={onScrollToAppointment}
-              className="nav-link text-blue-900 hover:text-red-600 transition-colors flex items-center text-lg"
+              onClick={onScrollToFAQ}
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
             >
-              <Calendar className="h-5 w-5 mr-1" />
-              Schedule
+              FAQ
             </button>
-            <Link
+          </div>
+          {/* Auth Buttons with reduced spacing */}
+          <div className="flex items-center space-x-2 ml-6">
+            <AuthButton
               to="/login"
-              className="flex items-center px-6 py-3 text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all hover:shadow-lg hover:scale-105 transform"
+              icon={LogIn}
+              bgColor="bg-blue-600"
+              hoverBgColor="hover:bg-blue-700"
             >
-              <LogIn className="h-5 w-5 mr-2" />
               Login
-            </Link>
-            <Link
+            </AuthButton>
+            <AuthButton
               to="/signup"
-              className="flex items-center px-6 py-3 text-white bg-red-600 rounded-full hover:bg-red-700 transition-all hover:shadow-lg hover:scale-105 transform"
+              icon={UserPlus}
+              bgColor="bg-red-600"
+              hoverBgColor="hover:bg-red-700"
             >
-              <UserPlus className="h-5 w-5 mr-2" />
               Sign Up
-            </Link>
+            </AuthButton>
           </div>
         </div>
       </div>

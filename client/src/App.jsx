@@ -1,15 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
-import NavBar from './components/Navbar';
+import NavBar from './components/NavBar';
 import HeroSection from './components/HeroSection';
 import FeaturesSection from './components/FeaturesSection';
-import QueryResolution from './components/QueryResolution';
 import AppointmentSection from './components/AppointmentSection';
+import FAQSection from './components/FAQSection';
 
 function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const featuresRef = useRef(null);
-  const queryRef = useRef(null);
   const appointmentRef = useRef(null);
+  const faqRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,13 +28,14 @@ function App() {
       <NavBar 
         isScrolled={isScrolled}
         onScrollToFeatures={() => scrollTo(featuresRef)}
-        onScrollToQuery={() => scrollTo(queryRef)}
         onScrollToAppointment={() => scrollTo(appointmentRef)}
+        onScrollToFAQ={() => scrollTo(faqRef)}
       />
       <HeroSection onDiscoverMore={() => scrollTo(featuresRef)} />
       <FeaturesSection ref={featuresRef} />
-      <QueryResolution ref={queryRef} />
       <AppointmentSection ref={appointmentRef} />
+
+      <FAQSection ref={faqRef} />
     </div>
   );
 }
