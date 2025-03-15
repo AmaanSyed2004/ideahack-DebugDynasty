@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // Helper to convert an uploaded file to a data URL
 function convertFileToDataUrl(file) {
@@ -126,10 +127,6 @@ function Signup() {
     console.log("Signup Form Data:", formData);
     console.log("Photo to Send (Data URL):", photoDataUrl);
     console.log("Audio Recording URL:", audioURL);
-    // Dummy axios call placeholder:
-    // axios.post('/api/signup', { ...formData, photo: photoDataUrl })
-    //   .then(response => console.log(response))
-    //   .catch(error => console.error(error));
     navigate('/');
   };
 
@@ -212,16 +209,22 @@ function Signup() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-50 to-red-50">
+    <div className="min-h-screen  w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50">
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
         <button onClick={() => navigate('/')} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
           Back to Home
         </button>
       </div>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] p-12 min-h-[550px]">
-          <h1 className="text-4xl font-bold text-center text-gradient mb-8">Sign Up</h1>
+      <div className="flex-1 relative top-[-25px] flex items-center justify-center">
+        {/* Updated modal container with enhanced background, spacing and internal scrolling */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-[85vh] overflow-y-auto "
+        >
+          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Sign Up</h1>
           {step === 1 && (
             <div>
               <h2 className="text-2xl font-semibold mb-4">Step 1: User Details Input</h2>
@@ -234,7 +237,7 @@ function Signup() {
                     value={formData.fullNameAadhaar}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
                 </div>
@@ -246,7 +249,7 @@ function Signup() {
                     value={formData.mobile}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
                 </div>
@@ -258,7 +261,7 @@ function Signup() {
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
@@ -270,7 +273,7 @@ function Signup() {
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
@@ -294,7 +297,7 @@ function Signup() {
                     value={formData.aadhaarNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
                 </div>
@@ -306,7 +309,7 @@ function Signup() {
                     value={formData.panNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                   />
                   {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
                 </div>
@@ -334,7 +337,7 @@ function Signup() {
                       name="passportPhoto"
                       accept="image/*"
                       onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-md"
+                      className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                     />
                     <div className="w-full flex justify-center">
                       {!formData.capturedPhoto && !isCapturing ? (
@@ -432,7 +435,7 @@ function Signup() {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
