@@ -1,12 +1,21 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import NavBar from './components/NavBar';
 import HeroSection from './components/HeroSection';
 import FeaturesSection from './components/FeaturesSection';
 import AppointmentSection from './components/AppointmentSection';
 import FAQSection from './components/FAQSection';
 
+// Separate pages for Login/Signup
+import Login from './components/Login';
+import Signup from './components/Signup';
+
 function App() {
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Refs for scrolling
+  const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const appointmentRef = useRef(null);
   const faqRef = useRef(null);
@@ -23,20 +32,44 @@ function App() {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return (
-    <div className="min-h-screen bg-white">
-      <NavBar 
-        isScrolled={isScrolled}
-        onScrollToFeatures={() => scrollTo(featuresRef)}
-        onScrollToAppointment={() => scrollTo(appointmentRef)}
-        onScrollToFAQ={() => scrollTo(faqRef)}
-      />
-      <HeroSection onDiscoverMore={() => scrollTo(featuresRef)} />
-      <FeaturesSection ref={featuresRef} />
-      <AppointmentSection ref={appointmentRef} />
+  // Home layout with plain divs for each section (no reanimation)
+  const HomeLayout = () => {
+    return (
+      <div className="relative">
+        <NavBar
+          isScrolled={isScrolled}
+          onScrollToHero={() => scrollTo(heroRef)}
+          onScrollToFeatures={() => scrollTo(featuresRef)}
+          onScrollToAppointment={() => scrollTo(appointmentRef)}
+          onScrollToFAQ={() => scrollTo(faqRef)}
+        />
+        <div ref={heroRef}>
+          <HeroSection />
+        </div>
+        <div ref={featuresRef}>
+          <FeaturesSection />
+        </div>
+        <div ref={appointmentRef}>
+          <AppointmentSection />
+        </div>
+        <div ref={faqRef}>
+          <FAQSection />
+        </div>
+      </div>
+    );
+  };
 
-      <FAQSection ref={faqRef} />
-    </div>
+  return (
+    <Router>
+      <Routes>
+        {/* Landing/Home Page */}
+        <Route path="/" element={<HomeLayout />} />
+
+        {/* Separate routes for Login & Signup */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -14,23 +14,18 @@ function Signup() {
     panNumber: '',
     passportPhoto: null,
     capturedPhoto: null,
-    audioRecording: null, // we'll store the recorded audio blob URL here
+    audioRecording: null,
   });
   const [errors, setErrors] = useState({});
-  const randomPhrase = "Please say: 'Open sesame'"; // placeholder phrase
-
-  // Audio recording state for Signup
+  const randomPhrase = "Please say: 'Open sesame'";
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-
-  // Refs for live photo capture in Signup
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
-  // Field validations
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
@@ -83,7 +78,6 @@ function Signup() {
   };
 
   const handleNext = () => {
-    // Validate required fields for each step
     if (step === 1) {
       const err1 = validateField('fullNameAadhaar', formData.fullNameAadhaar);
       const err2 = validateField('mobile', formData.mobile);
@@ -98,14 +92,20 @@ function Signup() {
     }
     if (step === 3) {
       if (!formData.passportPhoto && !formData.capturedPhoto) {
-        setErrors((prev) => ({ ...prev, passportPhoto: "Please provide a passport photo or capture one." }));
+        setErrors((prev) => ({
+          ...prev,
+          passportPhoto: "Please provide a passport photo or capture one.",
+        }));
         return;
       }
       if (!audioURL) {
-        setErrors((prev) => ({ ...prev, audioRecording: "Please record audio as instructed." }));
+        setErrors((prev) => ({
+          ...prev,
+          audioRecording: "Please record audio as instructed.",
+        }));
         return;
       }
-      // Save recorded audio URL to formData
+      // attach the audio to form data
       setFormData((prev) => ({ ...prev, audioRecording: audioURL }));
     }
     setStep(step + 1);
@@ -114,18 +114,12 @@ function Signup() {
   const handlePrev = () => setStep(step - 1);
 
   const handleVerify = async () => {
-    try {
-      // Dummy backend call for Aadhaar & PAN verification
-      // await axios.post('/api/verify-documents', { aadhaarNumber: formData.aadhaarNumber, panNumber: formData.panNumber });
-      handleNext();
-    } catch (error) {
-      console.error('Verification failed', error);
-    }
+    handleNext();
   };
 
   const handleSubmit = async () => {
     try {
-      // Dummy backend call for signup
+      // Example POST call
       await axios.post('/api/signup', formData);
       navigate('/');
     } catch (error) {
@@ -146,8 +140,7 @@ function Signup() {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        // Stop all audio tracks
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       };
       mediaRecorderRef.current.start();
       setRecording(true);
@@ -167,7 +160,7 @@ function Signup() {
     setAudioURL(null);
   };
 
-  // --- Live Photo Capture Functions for Signup ---
+  // --- Live Photo Capture Functions ---
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -185,7 +178,7 @@ function Signup() {
     }
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [isCapturing, formData.capturedPhoto]);
@@ -196,28 +189,38 @@ function Signup() {
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/png");
-      setFormData(prev => ({ ...prev, capturedPhoto: dataUrl }));
+      const dataUrl = canvas.toDataURL('image/png');
+      setFormData((prev) => ({ ...prev, capturedPhoto: dataUrl }));
       setIsCapturing(false);
-      // Stop the camera
       if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject.getTracks().forEach((track) => track.stop());
       }
     }
   };
 
   const handleRedoPhoto = () => {
-    setFormData(prev => ({ ...prev, capturedPhoto: null }));
+    setFormData((prev) => ({ ...prev, capturedPhoto: null }));
     setIsCapturing(true);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center">
-      <div className="container mx-auto p-6">
-        {/* Increased modal size */}
-        <div className="max-w-3xl mx-auto bg-white p-10 rounded-2xl shadow-2xl">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-50 to-red-50">
+      {/* Top branding + optional back/home button */}
+      <div className="flex items-center justify-between p-4">
+        <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
+        <button
+          onClick={() => navigate('/')}
+          className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md"
+        >
+          Back to Home
+        </button>
+      </div>
+
+      {/* Centered form container with slightly smaller min-height */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] p-12 min-h-[550px]">
           <h1 className="text-4xl font-bold text-center text-gradient mb-8">Sign Up</h1>
 
           {step === 1 && (
@@ -225,7 +228,9 @@ function Signup() {
               <h2 className="text-2xl font-semibold mb-4">Step 1: User Details Input</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">Full Name (as per Aadhaar/PAN)</label>
+                  <label className="block font-medium">
+                    Full Name (as per Aadhaar/PAN)
+                  </label>
                   <input
                     type="text"
                     name="fullNameAadhaar"
@@ -234,7 +239,11 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
+                  {errors.fullNameAadhaar && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.fullNameAadhaar}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block font-medium">Mobile Number</label>
@@ -246,7 +255,11 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                  {errors.mobile && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.mobile}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block font-medium">Email Address (optional)</label>
@@ -258,7 +271,11 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block font-medium">Set Password</label>
@@ -270,7 +287,11 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
@@ -286,10 +307,14 @@ function Signup() {
 
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar & PAN Verification</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 2: Aadhaar & PAN Verification
+              </h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">Enter Aadhaar Number</label>
+                  <label className="block font-medium">
+                    Enter Aadhaar Number
+                  </label>
                   <input
                     type="text"
                     name="aadhaarNumber"
@@ -298,10 +323,16 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
+                  {errors.aadhaarNumber && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.aadhaarNumber}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-medium">Enter PAN Number</label>
+                  <label className="block font-medium">
+                    Enter PAN Number
+                  </label>
                   <input
                     type="text"
                     name="panNumber"
@@ -310,7 +341,11 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
+                  {errors.panNumber && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.panNumber}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
@@ -332,11 +367,15 @@ function Signup() {
 
           {step === 3 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 3: Identity Authentication (Facial & Audio)</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 3: Identity Authentication (Facial & Audio)
+              </h2>
               <div className="space-y-6">
                 {/* Photo Section */}
                 <div>
-                  <label className="block font-medium mb-2">Passport Photo or Live Photo</label>
+                  <label className="block font-medium mb-2">
+                    Passport Photo or Live Photo
+                  </label>
                   <div className="flex flex-col items-center space-y-4">
                     <input
                       type="file"
@@ -355,7 +394,12 @@ function Signup() {
                         </button>
                       ) : isCapturing && !formData.capturedPhoto ? (
                         <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
-                          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
                           <canvas ref={canvasRef} className="hidden" />
                           <button
                             onClick={handleCapturePhoto}
@@ -366,7 +410,11 @@ function Signup() {
                         </div>
                       ) : (
                         <div className="relative w-full h-80 rounded-md overflow-hidden">
-                          <img src={formData.capturedPhoto} alt="Captured" className="w-full h-full object-cover" />
+                          <img
+                            src={formData.capturedPhoto}
+                            alt="Captured"
+                            className="w-full h-full object-cover"
+                          />
                           <button
                             onClick={handleRedoPhoto}
                             className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
@@ -376,12 +424,18 @@ function Signup() {
                         </div>
                       )}
                     </div>
-                    {errors.passportPhoto && <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>}
+                    {errors.passportPhoto && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.passportPhoto}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {/* Audio Recording Section */}
                 <div>
-                  <label className="block font-medium mb-2">Record Audio (Say the pre-decided phrase)</label>
+                  <label className="block font-medium mb-2">
+                    Record Audio (Say the pre-decided phrase)
+                  </label>
                   <div className="flex flex-col items-center space-y-3">
                     {!recording && !audioURL && (
                       <button
@@ -400,7 +454,7 @@ function Signup() {
                       </button>
                     )}
                     {audioURL && (
-                      <div className="flex flex-col items-center space-y-2">
+                      <div className="flex flex-col items-center space-y-2 w-full">
                         <audio src={audioURL} controls className="w-full" />
                         <button
                           onClick={handleRedoAudio}
@@ -410,10 +464,16 @@ function Signup() {
                         </button>
                       </div>
                     )}
-                    {errors.audioRecording && <p className="text-red-500 text-sm mt-1">{errors.audioRecording}</p>}
+                    {errors.audioRecording && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.audioRecording}
+                      </p>
+                    )}
                   </div>
                   <div className="mt-1">
-                    <p className="text-sm text-gray-600">Random Phrase: {randomPhrase}</p>
+                    <p className="text-sm text-gray-600">
+                      Random Phrase: {randomPhrase}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -436,7 +496,9 @@ function Signup() {
 
           {step === 4 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 4: Final Review & Submission</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 4: Final Review & Submission
+              </h2>
               <div className="space-y-4 text-lg">
                 <p>
                   <strong>Full Name:</strong> {formData.fullNameAadhaar}
@@ -445,7 +507,7 @@ function Signup() {
                   <strong>Mobile Number:</strong> {formData.mobile}
                 </p>
                 <p>
-                  <strong>Email:</strong> {formData.email || "Not Provided"}
+                  <strong>Email:</strong> {formData.email || 'Not Provided'}
                 </p>
                 <p>
                   <strong>Aadhaar Number:</strong> {formData.aadhaarNumber}
@@ -454,16 +516,16 @@ function Signup() {
                   <strong>PAN Number:</strong> {formData.panNumber}
                 </p>
                 <p>
-                  <strong>Photo:</strong>{" "}
+                  <strong>Photo:</strong>{' '}
                   {formData.passportPhoto
                     ? formData.passportPhoto.name
                     : formData.capturedPhoto
-                    ? "Captured Photo"
-                    : "Not Provided"}
+                    ? 'Captured Photo'
+                    : 'Not Provided'}
                 </p>
                 <p>
-                  <strong>Audio Recording:</strong>{" "}
-                  {audioURL ? "Recorded" : "Not Provided"}
+                  <strong>Audio Recording:</strong>{' '}
+                  {audioURL ? 'Recorded' : 'Not Provided'}
                 </p>
               </div>
               <div className="mt-8 flex justify-between">

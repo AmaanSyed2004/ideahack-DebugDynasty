@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 function Login() {
@@ -16,17 +15,13 @@ function Login() {
 
   const validateField = (name, value) => {
     let error = "";
-    switch (name) {
-      case 'identifier':
-        if (!value.trim()) error = "Email or Mobile Number is required.";
-        break;
-      case 'password':
-        if (!value.trim()) error = "Password is required.";
-        break;
-      default:
-        break;
+    if (name === 'identifier' && !value.trim()) {
+      error = "Email or Mobile Number is required.";
     }
-    setErrors(prev => ({ ...prev, [name]: error }));
+    if (name === 'password' && !value.trim()) {
+      error = "Password is required.";
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
@@ -40,20 +35,14 @@ function Login() {
     validateField(name, value);
   };
 
-  const handleCredentialsSubmit = async () => {
-    const error1 = validateField('identifier', credentials.identifier);
-    const error2 = validateField('password', credentials.password);
-    if (error1 || error2) return;
-    try {
-      // Dummy backend call for credential login
-      // await axios.post('/api/login', credentials);
-      setStep(2);
-    } catch (error) {
-      console.error('Login failed', error);
-    }
+  const handleCredentialsSubmit = () => {
+    const err1 = validateField('identifier', credentials.identifier);
+    const err2 = validateField('password', credentials.password);
+    if (err1 || err2) return;
+    setStep(2); // proceed to face auth
   };
 
-  // Start camera when entering step 2
+  // Start camera if step=2 and no livePhoto
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -71,7 +60,7 @@ function Login() {
     }
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [step, livePhoto]);
@@ -82,12 +71,12 @@ function Login() {
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = canvas.toDataURL('image/png');
       setLivePhoto(dataUrl);
       if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject.getTracks().forEach((track) => track.stop());
       }
     }
   };
@@ -97,21 +86,27 @@ function Login() {
     setStep(2);
   };
 
-  const handleFaceAuth = async () => {
-    try {
-      // Dummy backend call for facial authentication with livePhoto
-      // await axios.post('/api/login/face-auth', { livePhoto });
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Facial authentication failed', error);
-    }
+  const handleFaceAuth = () => {
+    // If face auth is successful:
+    navigate('/dashboard');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center">
-      <div className="container mx-auto p-6">
-        {/* Increased modal size */}
-        <div className="max-w-lg mx-auto bg-white p-10 rounded-2xl shadow-2xl">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-50 to-red-50">
+      {/* Top branding + optional back/home button */}
+      <div className="flex items-center justify-between p-4">
+        <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
+        <button
+          onClick={() => navigate('/')}
+          className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md"
+        >
+          Back to Home
+        </button>
+      </div>
+
+      {/* Centered form container */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] p-12 min-h-[600px]">
           <h1 className="text-4xl font-bold text-center text-gradient mb-8">Login</h1>
 
           {step === 1 && (
@@ -128,7 +123,9 @@ function Login() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
+                  {errors.identifier && (
+                    <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block font-medium">Password</label>
@@ -140,7 +137,9 @@ function Login() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                  )}
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
@@ -162,9 +161,18 @@ function Login() {
               </p>
               <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
                 {!livePhoto ? (
-                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <img src={livePhoto} alt="Live Capture" className="w-full h-full object-cover" />
+                  <img
+                    src={livePhoto}
+                    alt="Live Capture"
+                    className="w-full h-full object-cover"
+                  />
                 )}
                 <canvas ref={canvasRef} className="hidden" />
               </div>

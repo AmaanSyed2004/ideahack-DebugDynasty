@@ -1,34 +1,19 @@
 import React from 'react';
 import { LogIn, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
-// A reusable auth button component using Framer Motion for an underline animation
-function AuthButton({ to, icon: Icon, children, bgColor, hoverBgColor }) {
-  return (
-    <Link
-      to={to}
-      className={`relative overflow-hidden flex items-center px-6 py-3 text-white rounded-full transition-all transform ${bgColor} ${hoverBgColor}`}
-    >
-      <div className="relative z-10 flex items-center">
-        {Icon && <Icon className="h-5 w-5 mr-2" />}
-        {children}
-      </div>
-      <motion.div
-        initial={{ width: 0 }}
-        whileHover={{ width: "100%" }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-red-600"
-      />
-    </Link>
-  );
-}
-
-function NavBar({ isScrolled, onScrollToFeatures, onScrollToAppointment, onScrollToFAQ }) {
+function NavBar({
+  isScrolled,
+  onScrollToHero,
+  onScrollToFeatures,
+  onScrollToAppointment,
+  onScrollToFAQ,
+}) {
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? "glass-effect shadow-lg" : "bg-white"
+        isScrolled ? 'glass-effect shadow-lg' : 'bg-white'
       }`}
     >
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -38,6 +23,14 @@ function NavBar({ isScrolled, onScrollToFeatures, onScrollToAppointment, onScrol
         </div>
         <div className="flex items-center">
           <div className="flex items-center space-x-6">
+            {/* NEW: Home button */}
+            <button
+              onClick={onScrollToHero}
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+            >
+              Home
+            </button>
+
             <button
               onClick={onScrollToFeatures}
               className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
@@ -57,24 +50,34 @@ function NavBar({ isScrolled, onScrollToFeatures, onScrollToAppointment, onScrol
               FAQ
             </button>
           </div>
-          {/* Auth Buttons with reduced spacing */}
+          {/* Auth Buttons with route-based navigation */}
           <div className="flex items-center space-x-2 ml-6">
-            <AuthButton
+            <Link
               to="/login"
-              icon={LogIn}
-              bgColor="bg-blue-600"
-              hoverBgColor="hover:bg-blue-700"
+              className="relative overflow-hidden flex items-center px-6 py-3 text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all"
             >
+              <LogIn className="h-5 w-5 mr-2" />
               Login
-            </AuthButton>
-            <AuthButton
+              <motion.div
+                initial={{ width: 0 }}
+                whileHover={{ width: '100%' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-red-600"
+              />
+            </Link>
+            <Link
               to="/signup"
-              icon={UserPlus}
-              bgColor="bg-red-600"
-              hoverBgColor="hover:bg-red-700"
+              className="relative overflow-hidden flex items-center px-6 py-3 text-white bg-red-600 rounded-full hover:bg-red-700 transition-all"
             >
+              <UserPlus className="h-5 w-5 mr-2" />
               Sign Up
-            </AuthButton>
+              <motion.div
+                initial={{ width: 0 }}
+                whileHover={{ width: '100%' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-blue-600 to-red-600"
+              />
+            </Link>
           </div>
         </div>
       </div>
