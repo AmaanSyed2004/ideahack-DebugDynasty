@@ -3,7 +3,8 @@ import { Building, Users, Calendar, Shield } from "lucide-react";
 
 const AppointmentSection = React.forwardRef((props, ref) => {
   return (
-    <div ref={ref} className="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <div ref={ref} className="py-20 bg-blue-50">
+
       <div className="container mx-auto px-6">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-16">
           Book Your Appointment

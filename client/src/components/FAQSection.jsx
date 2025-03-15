@@ -46,7 +46,7 @@ const FAQSection = React.forwardRef((props, ref) => {
   ];
 
   return (
-    <div ref={ref} className="py-20 bg-white">
+    <div ref={ref} className="py-20 bg-blue-50">
       <div className="container mx-auto px-6">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-12 md:mb-16">
           Frequently Asked Questions
