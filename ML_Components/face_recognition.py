@@ -4,14 +4,14 @@ import cv2
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import euclidean
 
-def get_face_embedding(image_path, model_name="Facenet"):
+def get_face_embedding(image_array, model_name="Facenet"):
 
     try:
         # Load OpenCV face detector
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
         # Read image and convert to grayscale
-        img = cv2.imread(image_path)
+        img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Detect faces using OpenCV
@@ -19,20 +19,17 @@ def get_face_embedding(image_path, model_name="Facenet"):
 
         # Strict Face Detection Check
         if len(faces) == 0:
-            print("⚠️ No human face detected. Please make sure you are facing the front camera clearly.")
-            return None
+             return {"error": "No human face detected. Please ensure you are facing the front camera clearly."}
         elif len(faces) > 1:
-            print(f"⚠️ Multiple human faces detected ({len(faces)}). Please ensure only one person is facing the camera.")
-            return None
+            return {"error": f"Multiple human faces detected ({len(faces)}). Ensure only one person is facing the camera."}
 
         # Extract embeddings using DeepFace
-        embeddings = DeepFace.represent(img_path=image_path, model_name=model_name, enforce_detection=False)
+        embeddings = DeepFace.represent(img_path=img, model_name=model_name, enforce_detection=False)
 
-        return np.array(embeddings[0]['embedding'])
+        return {"embedding": embeddings[0].get('embedding', [])}
 
     except Exception as e:
-        print(f"❌ Error processing video frame: {str(e)}")
-        return None
+        return {"error": f"Error processing image: {str(e)}"}
 
 def compare_faces(img1_path, img2_path, cosine_threshold=0.5, euclidean_threshold=10):
 
@@ -69,10 +66,3 @@ def compare_faces(img1_path, img2_path, cosine_threshold=0.5, euclidean_threshol
         return "✅ Same person"
     else:
         return "❌ Different persons"
-
-# Example Usage
-img1 = "/content/reference1.jpeg"   
-img2 = "/content/reference2.jpeg"       
-
-result = compare_faces(img1, img2)
-print(result)
