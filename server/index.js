@@ -1,11 +1,22 @@
-const express = require("express");
+const express = require('express');
+const cors= require('cors');
+require('dotenv').config();
+
+const sequelize = require('./config/db'); 
+const authRouter = require('./routes/auth');
+
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+app.use(cors());
+app.use(express.json());
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+app.use('/auth', authRouter);
+sequelize.sync().then(()=>{ 
+    app.listen(5555, () => {
+        console.log(`Server is running on http://localhost:5555`);
+    });
+}).catch((error)=>{
+    console.error('Unable to connect to the database:', error);
+}
+);    
