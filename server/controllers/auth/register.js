@@ -9,7 +9,7 @@ const register = async (req, res) => {
   if(!face_img){
     return res.status(400).json({ message: "Face image is required" });
   }
-  if (!fullName || !email || !password || !phoneNumber || !face_img) {
+  if (!fullName || !password || !phoneNumber || !face_img) {
     return res.status(400).json({ message: "All fields are required" });
   }
   if (await User.findOne({ where: { email } })) {
