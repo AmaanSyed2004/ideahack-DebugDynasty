@@ -14,6 +14,10 @@ const Customer = sequelize.define(
         key: "userID",
       },
     },
+    audio_data:{
+      type: DataTypes.ARRAY(DataTypes.FLOAT), 
+      allowNull: false
+    },
     total_assets: DataTypes.DECIMAL,
     credit_score: DataTypes.INTEGER,
     active_loans: DataTypes.INTEGER,
