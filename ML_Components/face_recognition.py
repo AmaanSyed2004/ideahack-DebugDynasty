@@ -66,3 +66,28 @@ def compare_faces(img1_path, img2_path, cosine_threshold=0.5, euclidean_threshol
         return "✅ Same person"
     else:
         return "❌ Different persons"
+
+def compare_face_and_embedding(embedding, image_array, cosine_threshold=0.5, euclidean_threshold=10):
+    #this function will be called during the signup portion, when the user clicks their photo and sends their image, it will be checked against the embedding of the image in the database
+    #embedding1 is the embedding of the image sent by the user
+    #embedding2 is the embedding of the image in the database
+ 
+    embedding1 = embedding
+    embedding2 = get_face_embedding(image_array)
+
+    if embedding1 is None or embedding2.get("error") is not None:
+        return embedding2
+
+    cosine_sim = cosine_similarity([embedding1], [embedding2["embedding"]])[0][0]
+
+    euclidean_dist = euclidean(embedding1, embedding2["embedding"])
+
+    euclidean_sim = 1 / (1 + euclidean_dist)  
+
+
+    avg_similarity = (cosine_sim + euclidean_sim) / 2
+
+    if avg_similarity >= cosine_threshold:
+        return {"is_match": True, "similarity": avg_similarity}
+    else:
+        return {"is_match": False, "similarity": avg_similarity}
