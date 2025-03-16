@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowRight,
+  ArrowLeft,
   Mic,
   Video,
   MessageSquare,
@@ -18,6 +19,7 @@ const RaiseQuery = () => {
   const [submissionType, setSubmissionType] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [ticketNumber, setTicketNumber] = useState("");
+  const [queryText, setQueryText] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,13 +58,36 @@ const RaiseQuery = () => {
     }
   };
 
+  const handleBack = () => {
+    setShowSubmissionOptions(false);
+    setSubmissionType("");
+    setQueryText("");
+  };
+
   const handleSubmit = () => {
     if (submissionType && selectedOption) {
-      // Generate a random ticket number
       const randomTicket = `UBI${Math.floor(Math.random() * 1000000)
         .toString()
         .padStart(6, "0")}`;
       setTicketNumber(randomTicket);
+
+      const newQuery = {
+        ticketNumber: randomTicket,
+        category: queryOptions.find((opt) => opt.id === selectedOption)?.title,
+        submissionType,
+        content: queryText,
+        status: "Active",
+        timestamp: new Date().toISOString(),
+      };
+
+      const existingQueries = JSON.parse(
+        localStorage.getItem("userQueries") || "[]"
+      );
+      localStorage.setItem(
+        "userQueries",
+        JSON.stringify([newQuery, ...existingQueries])
+      );
+
       setShowSuccess(true);
     }
   };
@@ -218,6 +243,16 @@ const RaiseQuery = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="bg-white max-w-2xl mx-auto p-8 rounded-3xl shadow-xl">
+          {showSubmissionOptions && (
+            <button
+              onClick={handleBack}
+              className="mb-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Query Selection
+            </button>
+          )}
+
           {!showSubmissionOptions ? (
             <>
               <h2 className="text-2xl md:text-3xl font-semibold text-blue-900 mb-6">
@@ -376,6 +411,8 @@ const RaiseQuery = () => {
                       <textarea
                         className="w-full h-32 p-4 bg-white rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 transition-all"
                         placeholder="Please describe your query in detail..."
+                        value={queryText}
+                        onChange={(e) => setQueryText(e.target.value)}
                       />
                     )}
                     {submissionType === "audio" && (
