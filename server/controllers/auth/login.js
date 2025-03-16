@@ -1,6 +1,8 @@
 const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const {Op}=  require("sequelize");
+const FormData = require('form-data');
+const axios = require('axios');
 const setCookie = require("../../utils/jwt");
 const login = async (req, res) => {
     const {phoneNumber, password, email} = req.body;
@@ -12,6 +14,10 @@ const login = async (req, res) => {
     }
     if(phoneNumber && email){
         return res.status(400).json({message: "Please provide either phone number or email"});
+    }
+    const face_img= req.file;
+    if(!face_img){
+        return res.status(400).json({ message: "Face image is required" });
     }
     try{
         let user;
@@ -39,6 +45,25 @@ const login = async (req, res) => {
         if(!(await bcrypt.compare(password, user.password))){
             return res.status(400).json({message: "Invalid credentials"});
         }
+        //now, sending the request to the ml model to check the validity of the face image
+        const formData= new FormData();
+        formData.append("image", face_img.buffer, {
+            filename: face_img.originalname,
+            contentType: face_img.mimetype
+        })
+        const embedding = JSON.stringify(user.face_data);
+        formData.append("embedding", embedding);
+        const face_match= await axios.post("http://localhost:8000/verify_face", formData,{
+            headers: { "Content-Type": "multipart/form-data" }
+        })
+        console.log(face_match.data);
+        if(face_match.data.error){
+            return res.status(400).json({message: face_match.data.error});
+        }
+        if(!face_match.data.is_match){
+            return res.status(400).json({message: "Face image does not match"});
+        }
+
         setCookie(res, user);
         res.status(200).json({message: "User logged in successfully"});
     }

@@ -32,7 +32,9 @@ const register = async (req, res) => {
     const face_data= await axios.post("http://localhost:8000/get_face_embedding", formData,{
       headers: { "Content-Type": "multipart/form-data" }
     })
-    console.log(face_data) 
+    if(face_data.data.error){
+      return res.status(400).json({ message: face_data.data.error });
+    }
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
       fullName,
