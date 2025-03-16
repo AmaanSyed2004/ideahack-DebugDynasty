@@ -15,11 +15,13 @@ function UserHomePage() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    // Example snippet in UserHomePage.jsx
     const handleLogout = () => {
-        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        console.log("User logged out, token cleared");
-        navigate("/login");
+        localStorage.removeItem("isLoggedIn");
+        console.log("User logged out, login flag removed");
+        navigate("/");
     };
+
 
     return (
         <div className="min-h-screen bg-blue-50">

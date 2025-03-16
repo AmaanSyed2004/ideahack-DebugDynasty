@@ -2,9 +2,9 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-  const token = document.cookie.split(';').find(c => c.trim().startsWith("token="));
-  if (!token) {
-    console.error("ProtectedRoute: No token found, redirecting to login.");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  if (!isLoggedIn) {
+    console.error("ProtectedRoute: No login flag found, redirecting to login.");
     return <Navigate to="/login" />;
   }
   return children;
