@@ -1,6 +1,6 @@
 const multer = require("multer");
 
-const allowedMimeTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+const allowedMimeTypes = ["image/jpeg", "image/jpg"]; //only jpg image for now, since the ml model only takes jpg images
 
 const fileFilter = (req, file, cb) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
