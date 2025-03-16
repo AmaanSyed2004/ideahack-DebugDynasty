@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import HeroSection from "./components/HeroSection";
 import FeaturesSection from "./components/FeaturesSection";
-import AppointmentSection from "./components/AppointmentSection";
+import AppointmentSection from "./components/Appointments";
 import FAQSection from "./components/FAQSection";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
@@ -17,12 +17,23 @@ import MyAppointments from "./components/MyAppointments";
 import RaiseQuery from "./components/RaiseQuery";
 import Feedback from "./components/Feedback";
 import ProtectedRoute from "./components/ProtectedRoute";
+import InstantAppointment from "./components/InstantAppointment";
+import ScheduleAppointment from "./components/ScheduleAppointment";
 
 /* LandingPage component renders the public homepage sections */
-function LandingPage({ heroRef, featuresRef, appointmentRef, faqRef, scrollToSection }) {
+function LandingPage({
+  heroRef,
+  featuresRef,
+  appointmentRef,
+  faqRef,
+  scrollToSection,
+}) {
   return (
     <>
-      <HeroSection ref={heroRef} onDiscoverMore={() => scrollToSection(featuresRef)} />
+      <HeroSection
+        ref={heroRef}
+        onDiscoverMore={() => scrollToSection(featuresRef)}
+      />
       <FeaturesSection ref={featuresRef} />
       <AppointmentSection ref={appointmentRef} />
       <FAQSection ref={faqRef} />
@@ -113,6 +124,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Feedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/appointment/instant"
+          element={
+            <ProtectedRoute>
+              <InstantAppointment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/appointment/schedule"
+          element={
+            <ProtectedRoute>
+              <ScheduleAppointment />
             </ProtectedRoute>
           }
         />
