@@ -67,8 +67,9 @@ function Login() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
+      // Draw the current video frame onto the canvas and generate a JPEG data URL
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/png");
+      const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
       setLivePhoto(dataUrl);
       if (video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
@@ -91,14 +92,14 @@ function Login() {
     while(n--){
       u8arr[n] = bstr.charCodeAt(n);
     }
-    return new File([u8arr], filename, {type: mime});
+    return new File([u8arr], filename, { type: mime });
   };
 
   const handleFaceAuth = async () => {
     try {
       const formData = new FormData();
       formData.append('password', credentials.password);
-      // Check if identifier is email or phoneNumber
+      // Send identifier as email or phoneNumber based on its content
       if (credentials.identifier.includes('@')) {
         formData.append('email', credentials.identifier);
       } else {
@@ -109,11 +110,14 @@ function Login() {
         alert("No live photo captured");
         return;
       }
-      const faceFile = dataURLtoFile(livePhoto, "face.png");
+      // Convert livePhoto (JPEG) to File named "face.jpg"
+      const faceFile = dataURLtoFile(livePhoto, "face.jpg");
       formData.append('face_img', faceFile);
       console.log("Sending login request with formData:", formData);
       const response = await fetch("http://localhost:5555/auth/login", {
         method: "POST",
+        // Ensure credentials are sent if needed (e.g., for cross-site cookies)
+        credentials: 'include',
         body: formData
       });
       const result = await response.json();
@@ -123,6 +127,8 @@ function Login() {
         return;
       }
       console.log("Login successful:", result);
+      // Store a flag in localStorage so ProtectedRoute can detect authentication
+      localStorage.setItem("isLoggedIn", "true");
       navigate('/dashboard');
     } catch (error) {
       console.error("Error during login:", error);

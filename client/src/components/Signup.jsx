@@ -12,7 +12,7 @@ function convertFileToDataUrl(file) {
   });
 }
 
-// Helper to convert dataURL to File
+// Helper to convert dataURL to File (now with a .jpg extension)
 const dataURLtoFile = (dataurl, filename) => {
   let arr = dataurl.split(',');
   let mime = arr[0].match(/:(.*?);/)[1];
@@ -22,7 +22,7 @@ const dataURLtoFile = (dataurl, filename) => {
   while(n--){
     u8arr[n] = bstr.charCodeAt(n);
   }
-  return new File([u8arr], filename, {type: mime});
+  return new File([u8arr], filename, { type: mime });
 };
 
 function Signup() {
@@ -40,7 +40,8 @@ function Signup() {
     audioRecording: null,
   });
   const [errors, setErrors] = useState({});
-  const randomPhrase = "Please say: 'Open sesame'";
+  // Updated random phrase
+  const randomPhrase = "Please say 'My voice is my password. Verify me. The quick brown fox jumps over the lazy dog'";
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const mediaRecorderRef = useRef(null);
@@ -143,7 +144,7 @@ function Signup() {
       if (formData.passportPhoto) {
         photoFile = formData.passportPhoto;
       } else if (formData.capturedPhoto) {
-        photoFile = dataURLtoFile(formData.capturedPhoto, "face.png");
+        photoFile = dataURLtoFile(formData.capturedPhoto, "face.jpg");
       } else {
         console.error("No face image provided");
         alert("No face image provided");
@@ -155,7 +156,9 @@ function Signup() {
       formDataToSend.append("password", formData.password);
       formDataToSend.append("phoneNumber", formData.mobile);
       formDataToSend.append("face_img", photoFile);
-      console.log("Sending signup request with formData:", formDataToSend);
+      formDataToSend.append("role", 'customer');
+
+      console.log("Sending signup request with face file:", photoFile);
       const response = await fetch("http://localhost:5555/auth/register", {
         method: "POST",
         body: formDataToSend
@@ -187,6 +190,7 @@ function Signup() {
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
+        console.log("Audio recorded, URL:", url);
         setAudioURL(url);
         stream.getTracks().forEach(track => track.stop());
       };
@@ -238,8 +242,9 @@ function Signup() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
+      // Generate a JPEG image instead of PNG
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL('image/jpeg');
       setFormData(prev => ({ ...prev, capturedPhoto: dataUrl }));
       setIsCapturing(false);
       if (video.srcObject) {
