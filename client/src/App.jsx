@@ -19,6 +19,7 @@ import Feedback from "./components/Feedback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import InstantAppointment from "./components/InstantAppointment";
 import ScheduleAppointment from "./components/ScheduleAppointment";
+import Appointments from "./components/Appointments";
 
 /* LandingPage component renders the public homepage sections */
 function LandingPage({
@@ -107,7 +108,7 @@ function App() {
           path="/my-appointments"
           element={
             <ProtectedRoute>
-              <MyAppointments />
+              <Appointments />
             </ProtectedRoute>
           }
         />
