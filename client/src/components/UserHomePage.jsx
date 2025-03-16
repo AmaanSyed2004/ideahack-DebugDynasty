@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CreditCard, Car, Home } from "lucide-react";
 
 function UserHomePage() {
-    // For now the username is hard-coded. Later, get it from your auth context
     const username = "userrrrrr";
-
-    // Set up scroll detection so that the navbar changes style when scrolling
     const [isScrolled, setIsScrolled] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -17,19 +15,16 @@ function UserHomePage() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Dummy logout function – this is where you would call your backend logout API
+    // Example snippet in UserHomePage.jsx
     const handleLogout = () => {
-        // Example of what you might do:
-        // await fetch('/api/logout', { method: 'POST' });
-        // Clear authentication tokens, then navigate to the login page.
-        console.log("Logout function invoked (dummy implementation).");
-        // For now, no actual routing takes place:
-        // navigate("/login");
+        localStorage.removeItem("isLoggedIn");
+        console.log("User logged out, login flag removed");
+        navigate("/");
     };
+
 
     return (
         <div className="min-h-screen bg-blue-50">
-            {/* User-Specific Navbar */}
             <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"}`}>
                 <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     <div className="transform hover:scale-105 transition-transform">
@@ -37,7 +32,6 @@ function UserHomePage() {
                             UBI भरोसा
                         </span>
                     </div>
-                    {/* Desktop Navigation Buttons */}
                     <div className="hidden lg:flex items-center space-x-6">
                         <Link
                             to="/dashboard"
@@ -57,7 +51,6 @@ function UserHomePage() {
                         >
                             My Appointments
                         </Link>
-                        {/* Logout Button */}
                         <button
                             onClick={handleLogout}
                             className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
@@ -67,9 +60,6 @@ function UserHomePage() {
                     </div>
                 </div>
             </nav>
-
-            code
-
             <main className="pt-32 pb-20 px-6">
                 <div className="container mx-auto text-center">
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gradient mb-8 leading-tight">
@@ -105,14 +95,12 @@ function UserHomePage() {
                         </Link>
                     </div>
                 </div>
-
                 <section className="mt-20">
                     <div className="container mx-auto px-6">
                         <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-16">
                             Personalized Recommendations
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {/* Credit Loans Card */}
                             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
                                 <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
                                     <CreditCard className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
@@ -124,7 +112,6 @@ function UserHomePage() {
                                     Explore flexible credit options tailored for you.
                                 </p>
                             </div>
-                            {/* Car Loans Card */}
                             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
                                 <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
                                     <Car className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
@@ -136,7 +123,6 @@ function UserHomePage() {
                                     Get your dream car with our competitive loan offers.
                                 </p>
                             </div>
-                            {/* Home Loans Card */}
                             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
                                 <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
                                     <Home className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />

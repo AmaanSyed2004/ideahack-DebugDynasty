@@ -11,11 +11,12 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import UserHomePage from "./components/UserHomePage";
 
-// Import new (or dummy) components for user-specific routes
+// Import new components for user-specific routes
 import MyQueries from "./components/MyQueries";
 import MyAppointments from "./components/MyAppointments";
 import RaiseQuery from "./components/RaiseQuery";
 import Feedback from "./components/Feedback";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 /* LandingPage component renders the public homepage sections */
 function LandingPage({ heroRef, featuresRef, appointmentRef, faqRef, scrollToSection }) {
@@ -52,7 +53,6 @@ function App() {
   return (
     <Router>
       <Routes>
-
         <Route
           path="/"
           element={
@@ -74,14 +74,48 @@ function App() {
             </>
           }
         />
-
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<UserHomePage />} />
-        <Route path="/my-queries" element={<MyQueries />} />
-        <Route path="/my-appointments" element={<MyAppointments />} />
-        <Route path="/raise-query" element={<RaiseQuery />} />
-        <Route path="/feedback" element={<Feedback />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <UserHomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-queries"
+          element={
+            <ProtectedRoute>
+              <MyQueries />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-appointments"
+          element={
+            <ProtectedRoute>
+              <MyAppointments />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/raise-query"
+          element={
+            <ProtectedRoute>
+              <RaiseQuery />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback"
+          element={
+            <ProtectedRoute>
+              <Feedback />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
