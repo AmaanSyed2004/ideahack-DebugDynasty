@@ -101,7 +101,7 @@ function Login() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-[85vh] overflow-y-auto my-8"
+          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-[85vh] overflow-y-auto my-8"
         >
           <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Login</h1>
           {step === 1 && (

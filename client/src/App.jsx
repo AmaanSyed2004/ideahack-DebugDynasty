@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+// Import existing components
 import NavBar from "./components/NavBar";
 import HeroSection from "./components/HeroSection";
 import FeaturesSection from "./components/FeaturesSection";
@@ -7,20 +9,37 @@ import AppointmentSection from "./components/AppointmentSection";
 import FAQSection from "./components/FAQSection";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import UserHomePage from "./components/UserHomePage";
+
+// Import new (or dummy) components for user-specific routes
+import MyQueries from "./components/MyQueries";
+import MyAppointments from "./components/MyAppointments";
+import RaiseQuery from "./components/RaiseQuery";
+import Feedback from "./components/Feedback";
+
+/* LandingPage component renders the public homepage sections */
+function LandingPage({ heroRef, featuresRef, appointmentRef, faqRef, scrollToSection }) {
+  return (
+    <>
+      <HeroSection ref={heroRef} onDiscoverMore={() => scrollToSection(featuresRef)} />
+      <FeaturesSection ref={featuresRef} />
+      <AppointmentSection ref={appointmentRef} />
+      <FAQSection ref={faqRef} />
+    </>
+  );
+}
 
 function App() {
-  // Refs for landing page sections
+  // Create refs for landing page sections
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const appointmentRef = useRef(null);
   const faqRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Scroll handler to update nav style
+  // Scroll listener to update nav style
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -30,22 +49,10 @@ function App() {
     ref.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // LandingPage component that renders the sections
-  function LandingPage() {
-    return (
-      <>
-        <HeroSection ref={heroRef} onDiscoverMore={() => scrollToSection(featuresRef)} />
-        <FeaturesSection ref={featuresRef} />
-        <AppointmentSection ref={appointmentRef} />
-        <FAQSection ref={faqRef} />
-      </>
-    );
-  }
-
   return (
     <Router>
       <Routes>
-        {/* Landing Page Route */}
+
         <Route
           path="/"
           element={
@@ -57,14 +64,24 @@ function App() {
                 onScrollToAppointment={() => scrollToSection(appointmentRef)}
                 onScrollToFAQ={() => scrollToSection(faqRef)}
               />
-              <LandingPage />
+              <LandingPage
+                heroRef={heroRef}
+                featuresRef={featuresRef}
+                appointmentRef={appointmentRef}
+                faqRef={faqRef}
+                scrollToSection={scrollToSection}
+              />
             </>
           }
         />
-        {/* Login Page Route (without NavBar) */}
+
         <Route path="/login" element={<Login />} />
-        {/* Signup Page Route (without NavBar) */}
         <Route path="/signup" element={<Signup />} />
+        <Route path="/dashboard" element={<UserHomePage />} />
+        <Route path="/my-queries" element={<MyQueries />} />
+        <Route path="/my-appointments" element={<MyAppointments />} />
+        <Route path="/raise-query" element={<RaiseQuery />} />
+        <Route path="/feedback" element={<Feedback />} />
       </Routes>
     </Router>
   );
