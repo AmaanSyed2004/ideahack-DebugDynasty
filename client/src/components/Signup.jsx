@@ -34,6 +34,7 @@ function Signup() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const fileInputRef = useRef(null);
 
   const validateField = (name, value) => {
     let error = "";
@@ -75,7 +76,12 @@ function Signup() {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
-      setFormData(prev => ({ ...prev, [name]: files[0] }));
+      // When a photo is uploaded, also clear any previously captured photo.
+      if (name === "passportPhoto") {
+        setFormData(prev => ({ ...prev, passportPhoto: files[0], capturedPhoto: null }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: files[0] }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -208,8 +214,15 @@ function Signup() {
     setIsCapturing(true);
   };
 
+  const handleRemoveUploadedPhoto = () => {
+    setFormData(prev => ({ ...prev, passportPhoto: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
-    <div className="min-h-screen  w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 font-roboto">
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
         <button onClick={() => navigate('/')} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
@@ -217,12 +230,12 @@ function Signup() {
         </button>
       </div>
       <div className="flex-1 relative top-[-25px] flex items-center justify-center">
-        {/* Updated modal container with enhanced background, spacing and internal scrolling */}
+        {/* Modal container remains unchanged */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-[85vh] overflow-y-auto "
+          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-[85vh] overflow-y-auto"
         >
           <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Sign Up</h1>
           {step === 1 && (
@@ -333,34 +346,65 @@ function Signup() {
                   <label className="block font-medium mb-2">Passport Photo or Live Photo</label>
                   <div className="flex flex-col items-center space-y-4">
                     <input
+                      ref={fileInputRef}
                       type="file"
                       name="passportPhoto"
                       accept="image/*"
                       onChange={handleChange}
                       className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
                     />
-                    <div className="w-full flex justify-center">
-                      {!formData.capturedPhoto && !isCapturing ? (
-                        <button onClick={() => setIsCapturing(true)} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
-                          Capture Live Photo
+                    {formData.passportPhoto ? (
+                      <div className="flex flex-col items-center">
+                        <img
+                          src={URL.createObjectURL(formData.passportPhoto)}
+                          alt="Uploaded"
+                          className="w-full h-80 object-cover rounded-md"
+                        />
+                        <button
+                          onClick={handleRemoveUploadedPhoto}
+                          className="mt-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                        >
+                          Remove Uploaded Photo
                         </button>
-                      ) : isCapturing && !formData.capturedPhoto ? (
-                        <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
-                          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                          <canvas ref={canvasRef} className="hidden" />
-                          <button onClick={handleCapturePhoto} className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
-                            Capture
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="relative w-full h-80 rounded-md overflow-hidden">
-                          <img src={formData.capturedPhoto} alt="Captured" className="w-full h-full object-cover" />
-                          <button onClick={handleRedoPhoto} className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
-                            ReCapture
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : formData.capturedPhoto ? (
+                      <div className="relative w-full h-80 rounded-md overflow-hidden">
+                        <img
+                          src={formData.capturedPhoto}
+                          alt="Captured"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={handleRedoPhoto}
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                        >
+                          ReCapture
+                        </button>
+                      </div>
+                    ) : isCapturing ? (
+                      <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <canvas ref={canvasRef} className="hidden" />
+                        <button
+                          onClick={handleCapturePhoto}
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                        >
+                          Capture
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setIsCapturing(true)}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                      >
+                        Capture Live Photo
+                      </button>
+                    )}
                     {errors.passportPhoto && <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>}
                   </div>
                 </div>
