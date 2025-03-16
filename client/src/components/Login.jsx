@@ -81,10 +81,53 @@ function Login() {
     setStep(2);
   };
 
-  const handleFaceAuth = () => {
-    console.log("Login Credentials:", credentials);
-    console.log("Captured Photo (Data URL):", livePhoto);
-    navigate('/dashboard'); 
+  // Helper to convert dataURL to File
+  const dataURLtoFile = (dataurl, filename) => {
+    let arr = dataurl.split(',');
+    let mime = arr[0].match(/:(.*?);/)[1];
+    let bstr = atob(arr[1]);
+    let n = bstr.length;
+    let u8arr = new Uint8Array(n);
+    while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type: mime});
+  };
+
+  const handleFaceAuth = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('password', credentials.password);
+      // Check if identifier is email or phoneNumber
+      if (credentials.identifier.includes('@')) {
+        formData.append('email', credentials.identifier);
+      } else {
+        formData.append('phoneNumber', credentials.identifier);
+      }
+      if (!livePhoto) {
+        console.error("No live photo captured");
+        alert("No live photo captured");
+        return;
+      }
+      const faceFile = dataURLtoFile(livePhoto, "face.png");
+      formData.append('face_img', faceFile);
+      console.log("Sending login request with formData:", formData);
+      const response = await fetch("http://localhost:5555/auth/login", {
+        method: "POST",
+        body: formData
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Login error:", result);
+        alert("Login failed: " + result.message);
+        return;
+      }
+      console.log("Login successful:", result);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Error during login:", error);
+      alert("An error occurred during login. Check console for details.");
+    }
   };
 
   return (
@@ -96,7 +139,6 @@ function Login() {
         </button>
       </div>
       <div className="flex-1 relative top-[-25px] flex items-center justify-center">
-        {/* Updated modal container with same styling as Signup */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -145,6 +187,9 @@ function Login() {
               <h2 className="text-2xl font-semibold mb-4">Step 2: Facial Authentication</h2>
               <p className="mb-4 text-gray-600">
                 Please capture a live photo using your camera. Upload is not allowed.
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Ensure your face is well-lit and you're looking straight into the camera for accurate verification.
               </p>
               <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
                 {!livePhoto ? (

@@ -12,6 +12,19 @@ function convertFileToDataUrl(file) {
   });
 }
 
+// Helper to convert dataURL to File
+const dataURLtoFile = (dataurl, filename) => {
+  let arr = dataurl.split(',');
+  let mime = arr[0].match(/:(.*?);/)[1];
+  let bstr = atob(arr[1]);
+  let n = bstr.length;
+  let u8arr = new Uint8Array(n);
+  while(n--){
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, {type: mime});
+};
+
 function Signup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -53,8 +66,8 @@ function Signup() {
         break;
       case 'password':
         if (!value.trim()) error = "Password is required.";
-        else if (value.trim().length < 6)
-          error = "Password must be at least 6 characters.";
+        else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(value.trim()))
+          error = "Password must be at least 6 characters and include one uppercase letter, one lowercase letter, one number, and one symbol.";
         break;
       case 'aadhaarNumber':
         if (!value.trim()) error = "Aadhaar Number is required.";
@@ -63,8 +76,8 @@ function Signup() {
         break;
       case 'panNumber':
         if (!value.trim()) error = "PAN Number is required.";
-        else if (value.trim().length !== 10)
-          error = "PAN must be 10 characters.";
+        else if (!/^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(value.trim()))
+          error = "Enter a valid PAN number (e.g., ABCDE1234F).";
         break;
       default:
         break;
@@ -76,7 +89,6 @@ function Signup() {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
-      // When a photo is uploaded, also clear any previously captured photo.
       if (name === "passportPhoto") {
         setFormData(prev => ({ ...prev, passportPhoto: files[0], capturedPhoto: null }));
       } else {
@@ -126,14 +138,41 @@ function Signup() {
   };
 
   const handleSubmit = async () => {
-    let photoDataUrl = formData.capturedPhoto;
-    if (!photoDataUrl && formData.passportPhoto) {
-      photoDataUrl = await convertFileToDataUrl(formData.passportPhoto);
+    try {
+      let photoFile;
+      if (formData.passportPhoto) {
+        photoFile = formData.passportPhoto;
+      } else if (formData.capturedPhoto) {
+        photoFile = dataURLtoFile(formData.capturedPhoto, "face.png");
+      } else {
+        console.error("No face image provided");
+        alert("No face image provided");
+        return;
+      }
+      const formDataToSend = new FormData();
+      formDataToSend.append("fullName", formData.fullNameAadhaar);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("phoneNumber", formData.mobile);
+      formDataToSend.append("face_img", photoFile);
+      console.log("Sending signup request with formData:", formDataToSend);
+      const response = await fetch("http://localhost:5555/auth/register", {
+        method: "POST",
+        body: formDataToSend
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Signup error:", result);
+        alert("Signup failed: " + result.message);
+        return;
+      }
+      console.log("Signup successful:", result);
+      alert("Signup successful! Please login.");
+      navigate('/login');
+    } catch (error) {
+      console.error("Error during signup:", error);
+      alert("An error occurred during signup. Check console for details.");
     }
-    console.log("Signup Form Data:", formData);
-    console.log("Photo to Send (Data URL):", photoDataUrl);
-    console.log("Audio Recording URL:", audioURL);
-    navigate('/');
   };
 
   // Audio Recording Functions
@@ -230,7 +269,6 @@ function Signup() {
         </button>
       </div>
       <div className="flex-1 relative top-[-25px] flex items-center justify-center">
-        {/* Modal container remains unchanged */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -407,6 +445,9 @@ function Signup() {
                     )}
                     {errors.passportPhoto && <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>}
                   </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Ensure your face is clearly visible, in a well-lit environment, and you are looking straight into the camera.
+                  </p>
                 </div>
                 {/* Audio Section */}
                 <div>
@@ -434,6 +475,9 @@ function Signup() {
                   </div>
                   <div className="mt-1">
                     <p className="text-sm text-gray-600">Random Phrase: {randomPhrase}</p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Please record in a quiet environment and speak clearly.
+                    </p>
                   </div>
                 </div>
               </div>
