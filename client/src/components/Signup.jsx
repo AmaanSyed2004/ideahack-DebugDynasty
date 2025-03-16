@@ -12,7 +12,7 @@ function convertFileToDataUrl(file) {
   });
 }
 
-// Helper to convert dataURL to File (now with a .jpg extension)
+// Helper to convert dataURL to File (with a .jpg extension)
 const dataURLtoFile = (dataurl, filename) => {
   let arr = dataurl.split(',');
   let mime = arr[0].match(/:(.*?);/)[1];
@@ -24,6 +24,78 @@ const dataURLtoFile = (dataurl, filename) => {
   }
   return new File([u8arr], filename, { type: mime });
 };
+
+// ***** New Audio Conversion Functions *****
+async function convertWebmToWav(blob) {
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const wavDataView = audioBufferToWav(audioBuffer);
+  return new Blob([wavDataView.buffer], { type: 'audio/wav' });
+}
+
+function audioBufferToWav(buffer, opt) {
+  opt = opt || {};
+  var numChannels = buffer.numberOfChannels;
+  var sampleRate = buffer.sampleRate;
+  var format = opt.float32 ? 3 : 1;
+  var bitDepth = format === 3 ? 32 : 16;
+
+  var result;
+  if (numChannels === 2) {
+    result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+  } else {
+    result = buffer.getChannelData(0);
+  }
+  var bufferLength = result.length * (bitDepth / 8);
+  var headerLength = 44;
+  var totalLength = headerLength + bufferLength;
+  var arrayBuffer = new ArrayBuffer(totalLength);
+  var view = new DataView(arrayBuffer);
+
+  function writeString(view, offset, string) {
+    for (var i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + bufferLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+  view.setUint16(32, numChannels * bitDepth / 8, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, bufferLength, true);
+
+  if (format === 1) { // PCM
+    let offset = 44;
+    for (let i = 0; i < result.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, result[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+  }
+  return view;
+}
+
+function interleave(inputL, inputR) {
+  let length = inputL.length + inputR.length;
+  let result = new Float32Array(length);
+  let index = 0;
+  let inputIndex = 0;
+  while (index < length) {
+    result[index++] = inputL[inputIndex];
+    result[index++] = inputR[inputIndex];
+    inputIndex++;
+  }
+  return result;
+}
+// ***** End Audio Conversion Functions *****
 
 function Signup() {
   const navigate = useNavigate();
@@ -40,10 +112,10 @@ function Signup() {
     audioRecording: null,
   });
   const [errors, setErrors] = useState({});
-  // Updated random phrase
   const randomPhrase = "Please say 'My voice is my password. Verify me. The quick brown fox jumps over the lazy dog'";
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null); // Store the raw audio blob
   const mediaRecorderRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -150,6 +222,15 @@ function Signup() {
         alert("No face image provided");
         return;
       }
+      if (!audioBlob) {
+        console.error("No audio recording available");
+        alert("Please record audio as instructed.");
+        return;
+      }
+      // Convert the recorded audio from webm to wav
+      const wavBlob = await convertWebmToWav(audioBlob);
+      const audioFile = new File([wavBlob], "audio.wav", { type: "audio/wav" });
+      
       const formDataToSend = new FormData();
       formDataToSend.append("fullName", formData.fullNameAadhaar);
       formDataToSend.append("email", formData.email);
@@ -157,8 +238,9 @@ function Signup() {
       formDataToSend.append("phoneNumber", formData.mobile);
       formDataToSend.append("face_img", photoFile);
       formDataToSend.append("role", 'customer');
+      formDataToSend.append("audio", audioFile);  // Append the converted WAV file
 
-      console.log("Sending signup request with face file:", photoFile);
+      console.log("Sending signup request with face and audio files:", photoFile, audioFile);
       const response = await fetch("http://localhost:5555/auth/register", {
         method: "POST",
         body: formDataToSend
@@ -188,11 +270,12 @@ function Signup() {
         chunks.push(e.data);
       };
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(audioBlob);
+        const recordedBlob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(recordedBlob);
         console.log("Audio recorded, URL:", url);
         setAudioURL(url);
-        stream.getTracks().forEach(track => track.stop());
+        setAudioBlob(recordedBlob); // Store the raw webm blob
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       };
       mediaRecorderRef.current.start();
       setRecording(true);
@@ -210,6 +293,7 @@ function Signup() {
 
   const handleRedoAudio = () => {
     setAudioURL(null);
+    setAudioBlob(null);
   };
 
   // Live Photo Capture Functions
@@ -242,7 +326,6 @@ function Signup() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-      // Generate a JPEG image instead of PNG
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg');
       setFormData(prev => ({ ...prev, capturedPhoto: dataUrl }));
@@ -293,7 +376,7 @@ function Signup() {
                     value={formData.fullNameAadhaar}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
                 </div>
@@ -305,7 +388,7 @@ function Signup() {
                     value={formData.mobile}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
                 </div>
@@ -317,7 +400,7 @@ function Signup() {
                     value={formData.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
@@ -329,13 +412,13 @@ function Signup() {
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
-                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                   Next →
                 </button>
               </div>
@@ -353,7 +436,7 @@ function Signup() {
                     value={formData.aadhaarNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
                 </div>
@@ -365,16 +448,16 @@ function Signup() {
                     value={formData.panNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
                   ← Prev
                 </button>
-                <button onClick={handleVerify} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button onClick={handleVerify} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                   Verify →
                 </button>
               </div>
@@ -394,7 +477,7 @@ function Signup() {
                       name="passportPhoto"
                       accept="image/*"
                       onChange={handleChange}
-                      className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                      className="w-full p-3 border border-gray-300 rounded-md"
                     />
                     {formData.passportPhoto ? (
                       <div className="flex flex-col items-center">
@@ -405,7 +488,7 @@ function Signup() {
                         />
                         <button
                           onClick={handleRemoveUploadedPhoto}
-                          className="mt-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                          className="mt-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                         >
                           Remove Uploaded Photo
                         </button>
@@ -419,7 +502,7 @@ function Signup() {
                         />
                         <button
                           onClick={handleRedoPhoto}
-                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                         >
                           ReCapture
                         </button>
@@ -435,7 +518,7 @@ function Signup() {
                         <canvas ref={canvasRef} className="hidden" />
                         <button
                           onClick={handleCapturePhoto}
-                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                         >
                           Capture
                         </button>
@@ -443,7 +526,7 @@ function Signup() {
                     ) : (
                       <button
                         onClick={() => setIsCapturing(true)}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                       >
                         Capture Live Photo
                       </button>
@@ -459,19 +542,19 @@ function Signup() {
                   <label className="block font-medium mb-2">Record Audio (Say the pre-decided phrase)</label>
                   <div className="flex flex-col items-center space-y-3">
                     {!recording && !audioURL && (
-                      <button onClick={startRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                      <button onClick={startRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                         Record Audio
                       </button>
                     )}
                     {recording && (
-                      <button onClick={stopRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                      <button onClick={stopRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                         Stop Recording
                       </button>
                     )}
                     {audioURL && (
                       <div className="flex flex-col items-center space-y-2 w-full">
                         <audio src={audioURL} controls className="w-full" />
-                        <button onClick={handleRedoAudio} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                        <button onClick={handleRedoAudio} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                           Re-record Audio
                         </button>
                       </div>
@@ -487,10 +570,10 @@ function Signup() {
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
                   ← Prev
                 </button>
-                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                   Next →
                 </button>
               </div>
@@ -499,30 +582,47 @@ function Signup() {
           {step === 4 && (
             <div>
               <h2 className="text-2xl font-semibold mb-4">Step 4: Final Review & Submission</h2>
-              <div className="space-y-4 text-lg">
-                <p><strong>Full Name:</strong> {formData.fullNameAadhaar}</p>
-                <p><strong>Mobile Number:</strong> {formData.mobile}</p>
-                <p><strong>Email:</strong> {formData.email || 'Not Provided'}</p>
-                <p><strong>Aadhaar Number:</strong> {formData.aadhaarNumber}</p>
-                <p><strong>PAN Number:</strong> {formData.panNumber}</p>
-                <p>
-                  <strong>Photo:</strong>{" "}
-                  {formData.passportPhoto
-                    ? formData.passportPhoto.name
-                    : formData.capturedPhoto
-                    ? 'Captured Photo'
-                    : 'Not Provided'}
-                </p>
-                <p>
-                  <strong>Audio Recording:</strong>{" "}
-                  {audioURL ? 'Recorded' : 'Not Provided'}
-                </p>
+              <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Full Name:</span>
+                  <span>{formData.fullNameAadhaar}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Mobile Number:</span>
+                  <span>{formData.mobile}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Email:</span>
+                  <span>{formData.email || 'Not Provided'}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Aadhaar Number:</span>
+                  <span>{formData.aadhaarNumber}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">PAN Number:</span>
+                  <span>{formData.panNumber}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium">Photo:</span>
+                  <span>
+                    {formData.passportPhoto
+                      ? formData.passportPhoto.name
+                      : formData.capturedPhoto
+                      ? 'Captured Photo'
+                      : 'Not Provided'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Audio Recording:</span>
+                  <span>{audioURL ? 'Recorded' : 'Not Provided'}</span>
+                </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
+                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
                   ← Prev
                 </button>
-                <button onClick={handleSubmit} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button onClick={handleSubmit} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
                   Confirm & Submit
                 </button>
               </div>
