@@ -25,11 +25,25 @@ const MyQueries = () => {
   }, []);
 
   useEffect(() => {
-    // Load queries from localStorage
-    const savedQueries = localStorage.getItem("userQueries");
-    if (savedQueries) {
-      setQueries(JSON.parse(savedQueries));
-    }
+    // Set dummy queries
+    setQueries([
+      {
+        ticketNumber: "TCK12345",
+        category: "Tax Filing Issue",
+        submissionType: "text",
+        timestamp: Date.now(),
+        status: "active",
+        response: "Your query is being reviewed.",
+      },
+      {
+        ticketNumber: "TCK67890",
+        category: "GST Registration",
+        submissionType: "audio",
+        timestamp: Date.now() - 86400000,
+        status: "pending",
+        response: "We will update you soon.",
+      },
+    ]);
   }, []);
 
   const getSubmissionTypeIcon = (type) => {
@@ -76,11 +90,9 @@ const MyQueries = () => {
         }`}
       >
         <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="transform hover:scale-105 transition-transform">
-            <span className="text-2xl sm:text-3xl font-bold text-gradient">
-              UBI भरोसा
-            </span>
-          </div>
+          <span className="text-2xl sm:text-3xl font-bold text-gradient">
+            UBI भरोसा
+          </span>
           <div className="hidden lg:flex items-center space-x-6">
             <Link
               to="/dashboard"
@@ -106,127 +118,61 @@ const MyQueries = () => {
 
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-blue-900">My Queries</h1>
-            <Link
-              to="/raise-query"
-              className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all transform hover:scale-105"
-            >
-              New Query
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </div>
-
-          <div className="space-y-4">
-            {queries.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <p className="text-gray-600 text-lg mb-4">No queries found</p>
-                <Link
-                  to="/raise-query"
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
-                >
-                  Raise your first query
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
-            ) : (
-              queries.map((query, index) => (
+          <h1 className="text-3xl font-bold text-blue-900 mb-8">My Queries</h1>
+          {queries.length === 0 ? (
+            <p className="text-center text-gray-600 text-lg">
+              No queries found
+            </p>
+          ) : (
+            queries.map((query, index) => (
+              <div
+                key={query.ticketNumber}
+                className="bg-white rounded-2xl shadow-md overflow-hidden mb-4"
+              >
                 <div
-                  key={query.ticketNumber}
-                  className="bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300"
+                  className="p-6 cursor-pointer"
+                  onClick={() =>
+                    setExpandedQuery(expandedQuery === index ? null : index)
+                  }
                 >
-                  <div
-                    className="p-6 cursor-pointer"
-                    onClick={() =>
-                      setExpandedQuery(expandedQuery === index ? null : index)
-                    }
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="bg-gray-100 p-2 rounded-lg">
-                          {getSubmissionTypeIcon(query.submissionType)}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-blue-900">
-                            {query.category}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            Ticket: {query.ticketNumber}
-                          </p>
-                        </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gray-100 p-2 rounded-lg">
+                        {getSubmissionTypeIcon(query.submissionType)}
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <span
-                          className={`text-sm font-medium ${getStatusColor(
-                            query.status
-                          )}`}
-                        >
-                          {query.status}
-                        </span>
-                        {expandedQuery === index ? (
-                          <ChevronUp className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-gray-400" />
-                        )}
+                      <div>
+                        <h3 className="text-lg font-semibold text-blue-900">
+                          {query.category}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Ticket: {query.ticketNumber}
+                        </p>
                       </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <span
+                        className={`text-sm font-medium ${getStatusColor(
+                          query.status
+                        )}`}
+                      >
+                        {query.status}
+                      </span>
+                      {expandedQuery === index ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
                   </div>
-
-                  {expandedQuery === index && (
-                    <div className="px-6 pb-6 pt-2 border-t border-gray-100">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Submission Type
-                          </p>
-                          <p className="text-gray-900 flex items-center">
-                            {getSubmissionTypeIcon(query.submissionType)}
-                            <span className="ml-2">{query.submissionType}</span>
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Created On
-                          </p>
-                          <p className="text-gray-900">
-                            {formatDate(query.timestamp)}
-                          </p>
-                        </div>
-                        {query.response && (
-                          <div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              Response
-                            </p>
-                            <p className="text-gray-900">{query.response}</p>
-                          </div>
-                        )}
-                        <div className="pt-4 flex space-x-4">
-                          <button
-                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                            onClick={() => {
-                              /* Handle instant appointment */
-                            }}
-                          >
-                            <Clock className="h-4 w-4" />
-                            <span>Book Instant</span>
-                          </button>
-                          <button
-                            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-lg hover:opacity-90 transition-colors"
-                            onClick={() => {
-                              /* Handle future appointment */
-                            }}
-                          >
-                            <Calendar className="h-4 w-4" />
-                            <span>Schedule</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
+                {expandedQuery === index && (
+                  <div className="px-6 pb-6 pt-2 border-t border-gray-100">
+                    <p className="text-gray-900">{query.response}</p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
