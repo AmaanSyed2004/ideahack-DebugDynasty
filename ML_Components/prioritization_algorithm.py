@@ -10,6 +10,7 @@ from typing import Tuple, Dict, Any
 import warnings
 from pathlib import Path
 from io import BytesIO
+import pickle
 
 # Enable experimental halving search functionality in scikit-learn
 from sklearn.experimental import enable_halving_search_cv  # noqa
@@ -20,6 +21,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+MODEL_FILE_PATH = "customer_priority_model.pkl"
 
 class CustomerPriorityScorer:
     """A class to handle customer priority scoring and modeling"""
@@ -139,8 +142,8 @@ class CustomerPriorityScorer:
             cv=5,
             scoring='neg_mean_squared_error',
             verbose=1,
-            n_jobs=-1,
-            factor=3
+            n_jobs=-1,    # use all available cores
+            factor=3      # aggressive candidate elimination factor
         )
 
         halving_search.fit(X_train, y_train)
@@ -169,18 +172,22 @@ class CustomerPriorityScorer:
         logging.info("Model training completed")
         return metrics
 
-def run_priority_scoring(file_data: bytes) -> dict:
+def run_priority_scoring(file_data: bytes, pretrained: bool = True) -> dict:
     """
-    Run the customer priority scoring and model training.
+    Run the customer priority scoring pipeline. If a pretrained model is available,
+    load it to avoid retraining. Otherwise, train the model and dump it to a file.
 
     Args:
         file_data: CSV file data as bytes.
+        pretrained: If True, load model from disk if available.
 
     Returns:
-        Dictionary containing model performance metrics, execution time, and feature importance.
+        Dictionary containing model performance metrics or predictions, execution time,
+        and feature importance.
     """
     warnings.filterwarnings('ignore')
     start_time = time.time()
+    df = pd.read_csv(BytesIO(file_data))
 
     # Configuration parameters
     config = {
@@ -189,29 +196,43 @@ def run_priority_scoring(file_data: bytes) -> dict:
         'cv_folds': 5
     }
 
-    # Initialize scorer and read CSV from bytes
-    scorer = CustomerPriorityScorer(config)
-    df = pd.read_csv(BytesIO(file_data))
-
-    # Process data and train the model
-    X, y = scorer.preprocess_data(df)
-    metrics = scorer.train_model(X, y)
-
-    # Calculate total execution time
-    execution_time = time.time() - start_time
-
-    # Prepare the result dictionary
-    results = {
-        'metrics': metrics,
-        'execution_time': round(execution_time, 2),
-        'feature_importance': scorer.feature_importance.to_dict(orient='records')
-    }
-    return results
+    # If a pretrained model exists and the flag is set, load it.
+    if pretrained and Path(MODEL_FILE_PATH).exists():
+        logging.info("Loading pretrained model from file...")
+        with open(MODEL_FILE_PATH, "rb") as f:
+            scorer = pickle.load(f)
+        # Preprocess the new data using the same pipeline
+        X, _ = scorer.preprocess_data(df)
+        # Get predictions from the loaded model
+        predictions = scorer.model.predict(X)
+        execution_time = time.time() - start_time
+        results = {
+            'predictions': predictions.tolist(),
+            'execution_time': round(execution_time, 2),
+            'feature_importance': scorer.feature_importance.to_dict(orient='records'),
+            'message': "Model loaded from file and predictions computed."
+        }
+        return results
+    else:
+        logging.info("No pretrained model found. Training model...")
+        scorer = CustomerPriorityScorer(config)
+        X, y = scorer.preprocess_data(df)
+        metrics = scorer.train_model(X, y)
+        execution_time = time.time() - start_time
+        results = {
+            'metrics': metrics,
+            'execution_time': round(execution_time, 2),
+            'feature_importance': scorer.feature_importance.to_dict(orient='records')
+        }
+        # Save the trained model for future calls
+        with open(MODEL_FILE_PATH, "wb") as f:
+            pickle.dump(scorer, f)
+        return results
 
 # For local testing purposes, this block can be removed when integrating with FastAPI.
 if __name__ == "__main__":
     file_path = Path("./synthetic_customer_data.csv")
     with open(file_path, "rb") as f:
         file_data = f.read()
-    results = run_priority_scoring(file_data)
+    results = run_priority_scoring(file_data, pretrained=True)
     print(results)
