@@ -1,14 +1,26 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CreditCard, Car, Home } from "lucide-react";
 
 function UserHomePage() {
-    // For now the username is hard-coded; later pull it from your auth context or state.
-    const username = "John Doe";
+    // For now, the username is hard-coded.
+    const username = "userrrrrr";
+
+    // Set up scroll detection to apply different navbar styles
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     return (
-        <div className="min-h-screen bg-blue-50">
-            <nav className="fixed w-full z-50 transition-all duration-300 bg-blue-50 shadow-lg">
+        
+            <div className="min-h-screen bg-blue-50">
+                <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"}`}>
                 <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     <div className="transform hover:scale-105 transition-transform">
                         <span className="text-2xl sm:text-3xl font-bold text-gradient">
@@ -36,10 +48,12 @@ function UserHomePage() {
                         </Link>
                     </div>
                 </div>
-            </nav >
+            </nav>
 
-            < main className="pt-32 pb-20 px-6" >
-                <div div className="container mx-auto text-center" >
+
+
+            <main className="pt-32 pb-20 px-6">
+                <div className="container mx-auto text-center">
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gradient mb-8 leading-tight">
                         Hello, {username}!
                     </h1>
@@ -74,7 +88,7 @@ function UserHomePage() {
                     </div>
                 </div>
 
-                <section section className="mt-20" >
+                <section className="mt-20">
                     <div className="container mx-auto px-6">
                         <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-16">
                             Personalized Recommendations
@@ -118,8 +132,8 @@ function UserHomePage() {
                             </div>
                         </div>
                     </div>
-                </section >
-            </main >
+                </section>
+            </main>
         </div >
     );
 }
