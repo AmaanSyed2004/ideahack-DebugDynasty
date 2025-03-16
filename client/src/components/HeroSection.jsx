@@ -25,7 +25,7 @@ const HeroSection = React.forwardRef(({ onDiscoverMore }, ref) => {
               !hasAnimated ? "animate-slide-in" : ""
             }`}
           >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gradient mb-8 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gradient mb-8 leading-tight pb-3">
               Revolutionizing Digital Banking with UBI भरोसा
             </h1>
             <p className="text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
