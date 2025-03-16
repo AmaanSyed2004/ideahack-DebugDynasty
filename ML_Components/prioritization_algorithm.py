@@ -9,6 +9,7 @@ import time
 from typing import Tuple, Dict, Any
 import warnings
 from pathlib import Path
+from io import BytesIO
 
 # Enable experimental halving search functionality in scikit-learn
 from sklearn.experimental import enable_halving_search_cv  # noqa
@@ -138,8 +139,8 @@ class CustomerPriorityScorer:
             cv=5,
             scoring='neg_mean_squared_error',
             verbose=1,
-            n_jobs=-1,    # use all available cores
-            factor=3      # aggressive candidate elimination factor
+            n_jobs=-1,
+            factor=3
         )
 
         halving_search.fit(X_train, y_train)
@@ -168,47 +169,49 @@ class CustomerPriorityScorer:
         logging.info("Model training completed")
         return metrics
 
-def main():
-    """Main execution function"""
-    # Suppress warnings
-    warnings.filterwarnings('ignore')
+def run_priority_scoring(file_data: bytes) -> dict:
+    """
+    Run the customer priority scoring and model training.
 
-    # Configuration
+    Args:
+        file_data: CSV file data as bytes.
+
+    Returns:
+        Dictionary containing model performance metrics, execution time, and feature importance.
+    """
+    warnings.filterwarnings('ignore')
+    start_time = time.time()
+
+    # Configuration parameters
     config = {
         'random_state': 42,
         'test_size': 0.2,
         'cv_folds': 5
     }
 
-    try:
-        # Initialize timer
-        start_time = time.time()
+    # Initialize scorer and read CSV from bytes
+    scorer = CustomerPriorityScorer(config)
+    df = pd.read_csv(BytesIO(file_data))
 
-        # Initialize scorer
-        scorer = CustomerPriorityScorer(config)
+    # Process data and train the model
+    X, y = scorer.preprocess_data(df)
+    metrics = scorer.train_model(X, y)
 
-        # Read data
-        file_path = Path("./synthetic_customer_data.csv")
-        df = pd.read_csv(file_path)
+    # Calculate total execution time
+    execution_time = time.time() - start_time
 
-        # Process data
-        X, y = scorer.preprocess_data(df)
+    # Prepare the result dictionary
+    results = {
+        'metrics': metrics,
+        'execution_time': round(execution_time, 2),
+        'feature_importance': scorer.feature_importance.to_dict(orient='records')
+    }
+    return results
 
-        # Train model and get metrics
-        metrics = scorer.train_model(X, y)
-
-        # Print RMSE and MAE
-        print(f"RMSE: {metrics['rmse']:.4f}")
-        print(f"MAE: {metrics['mae']:.4f}")
-
-        # Print execution time
-        execution_time = time.time() - start_time
-        print(f"Total execution time: {execution_time:.2f} seconds")
-        logging.info(f"Total execution time: {execution_time:.2f} seconds")
-
-    except Exception as e:
-        logging.error(f"An error occurred: {str(e)}")
-        raise
-
+# For local testing purposes, this block can be removed when integrating with FastAPI.
 if __name__ == "__main__":
-    main()
+    file_path = Path("./synthetic_customer_data.csv")
+    with open(file_path, "rb") as f:
+        file_data = f.read()
+    results = run_priority_scoring(file_data)
+    print(results)
