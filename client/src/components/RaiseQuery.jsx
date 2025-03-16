@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Mic, Video, MessageSquare } from "lucide-react";
+import {
+  ArrowRight,
+  Mic,
+  Video,
+  MessageSquare,
+  CheckCircle,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 const RaiseQuery = () => {
   const navigate = useNavigate();
@@ -8,6 +16,8 @@ const RaiseQuery = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSubmissionOptions, setShowSubmissionOptions] = useState(false);
   const [submissionType, setSubmissionType] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,13 +58,126 @@ const RaiseQuery = () => {
 
   const handleSubmit = () => {
     if (submissionType && selectedOption) {
-      console.log("Submitting query:", {
-        type: submissionType,
-        category: selectedOption,
-      });
-      navigate("/my-queries");
+      // Generate a random ticket number
+      const randomTicket = `UBI${Math.floor(Math.random() * 1000000)
+        .toString()
+        .padStart(6, "0")}`;
+      setTicketNumber(randomTicket);
+      setShowSuccess(true);
     }
   };
+
+  const handleBookInstant = () => {
+    navigate("/appointment/instant");
+  };
+
+  const handleBookFuture = () => {
+    navigate("/appointment/schedule");
+  };
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <nav
+          className={`fixed w-full z-50 transition-all duration-300 ${
+            isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"
+          }`}
+        >
+          <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="transform hover:scale-105 transition-transform">
+              <span className="text-2xl sm:text-3xl font-bold text-gradient">
+                UBI भरोसा
+              </span>
+            </div>
+            <div className="hidden lg:flex items-center space-x-6">
+              <Link
+                to="/dashboard"
+                className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+              >
+                Home
+              </Link>
+              <Link
+                to="/my-queries"
+                className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+              >
+                My Queries
+              </Link>
+              <Link
+                to="/my-appointments"
+                className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+              >
+                My Appointments
+              </Link>
+            </div>
+          </div>
+        </nav>
+
+        <div className="container mx-auto px-4 pt-32 pb-20">
+          <div className="bg-white max-w-2xl mx-auto p-8 rounded-3xl shadow-xl">
+            <div className="text-center mb-8">
+              <div className="inline-block p-3 bg-green-100 rounded-full mb-4">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+              </div>
+              <h2 className="text-3xl font-bold text-blue-900 mb-2">
+                Service Ticket Created!
+              </h2>
+              <p className="text-gray-600 text-lg">
+                Your ticket number is: {ticketNumber}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-100 mb-8">
+              <h3 className="text-xl font-semibold text-blue-900 mb-4">
+                Summary of the query
+              </h3>
+              <div className="space-y-3">
+                <p className="text-gray-700">
+                  <strong>Category:</strong>{" "}
+                  {queryOptions.find((opt) => opt.id === selectedOption)?.title}
+                </p>
+                <p className="text-gray-700">
+                  <strong>Submission Type:</strong>{" "}
+                  {submissionType.charAt(0).toUpperCase() +
+                    submissionType.slice(1)}
+                </p>
+                <p className="text-gray-700">
+                  <strong>Status:</strong>{" "}
+                  <span className="text-green-600">Active</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={handleBookInstant}
+                className="flex items-center justify-center space-x-2 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all transform hover:scale-102"
+              >
+                <Clock className="h-5 w-5" />
+                <span>Book Instant Appointment</span>
+              </button>
+              <button
+                onClick={handleBookFuture}
+                className="flex items-center justify-center space-x-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-xl hover:opacity-90 transition-all transform hover:scale-102"
+              >
+                <Calendar className="h-5 w-5" />
+                <span>Book Future Appointment</span>
+              </button>
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link
+                to="/my-queries"
+                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                View All Queries
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
