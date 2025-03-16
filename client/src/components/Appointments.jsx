@@ -11,7 +11,41 @@ import {
 
 const Appointments = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState([
+    {
+      id: 1,
+      type: "instant",
+      status: "upcoming",
+      date: "2025-03-20",
+      time: "10:00",
+      queryTicket: "UBI123456",
+      meetLink: "https://meet.ubi.com/xyz123",
+    },
+    {
+      id: 2,
+      type: "scheduled",
+      status: "completed",
+      date: "2025-03-18",
+      time: "14:30",
+      queryTicket: "UBI123457",
+    },
+    {
+      id: 3,
+      type: "instant",
+      status: "upcoming",
+      date: "2025-03-21",
+      time: "11:00",
+      queryTicket: "UBI123458",
+    },
+    {
+      id: 4,
+      type: "scheduled",
+      status: "cancelled",
+      date: "2025-03-17",
+      time: "16:00",
+      queryTicket: "UBI123459",
+    },
+  ]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,14 +53,6 @@ const Appointments = () => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    // Load appointments from localStorage
-    const savedAppointments = localStorage.getItem("userAppointments");
-    if (savedAppointments) {
-      setAppointments(JSON.parse(savedAppointments));
-    }
   }, []);
 
   const formatDate = (date) => {
