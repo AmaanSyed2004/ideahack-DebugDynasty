@@ -13,7 +13,6 @@ import UserHomePage from "./components/UserHomePage";
 
 // Import new components for user-specific routes
 import MyQueries from "./components/MyQueries";
-import MyAppointments from "./components/MyAppointments";
 import RaiseQuery from "./components/RaiseQuery";
 import Feedback from "./components/Feedback";
 import ProtectedRoute from "./components/ProtectedRoute";
