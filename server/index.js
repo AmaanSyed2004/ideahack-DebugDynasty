@@ -9,7 +9,9 @@ const { authenticateJWT } = require("./middleware/authMiddleware");
 const verify = require("./controllers/auth/verify");
 const cookieParser = require("cookie-parser");
 const addTicketRouter = require("./routes/ticket/addTicket");
-
+const otpRouter = require("./routes/otp/otpRoutes");
+const resolutionRouter = require("./routes/ticket/resolution");
+const queueRouter = require("./routes/ticket/queue");
 const app = express();
 
 app.use(
@@ -23,10 +25,12 @@ app.use(express.json());
 
 app.use("/auth/customer", authRouterCustomer);
 app.use("/auth/worker", authRouterWorker);
-app.use("/auth/otp", require("./routes/otp/otpRoutes"));
+app.use("/auth/", otpRouter);
 app.get("/auth/verify", authenticateJWT, verify);
 
 app.use("/ticket/add", addTicketRouter);
+app.use('/ticket/resolve', resolutionRouter);
+app.use("/ticket/queue", queueRouter);
 sequelize
   .sync({ alter: true })
   .then(() => {
