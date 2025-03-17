@@ -1,9 +1,12 @@
+/* Login.jsx */
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User, Lock, Camera, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { toast, Toaster } from "react-hot-toast";
 
+// Helper: Convert dataURL to File
 const dataURLtoFile = (dataurl, filename) => {
   let arr = dataurl.split(",");
   let mime = arr[0].match(/:(.*?);/)[1];
@@ -16,16 +19,27 @@ const dataURLtoFile = (dataurl, filename) => {
   return new File([u8arr], filename, { type: mime });
 };
 
+// Reusable loading spinner overlay
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center">
+    <Loader2 className="animate-spin text-blue-600" size={32} />
+  </div>
+);
+
 function Login() {
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const [step, setStep] = useState(1);
-  const [credentials, setCredentials] = useState({ identifier: "", password: "" });
+  const [credentials, setCredentials] = useState({
+    identifier: "",
+    password: ""
+  });
   const [errors, setErrors] = useState({});
   const [livePhoto, setLivePhoto] = useState(null);
   const [isEmployee, setIsEmployee] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const [loading, setLoading] = useState(false);
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -62,6 +76,7 @@ function Login() {
     setStep(2);
   };
 
+  // Start camera when on facial auth step (step 2)
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -106,6 +121,11 @@ function Login() {
   };
 
   const handleFaceAuth = async () => {
+    if (!livePhoto) {
+      toast.error("No live photo captured");
+      return;
+    }
+    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("password", credentials.password);
@@ -113,11 +133,6 @@ function Login() {
         formData.append("email", credentials.identifier);
       } else {
         formData.append("phoneNumber", credentials.identifier);
-      }
-      if (!livePhoto) {
-        console.error("No live photo captured");
-        alert("No live photo captured");
-        return;
       }
       const faceFile = dataURLtoFile(livePhoto, "face.jpg");
       formData.append("face_img", faceFile);
@@ -134,20 +149,23 @@ function Login() {
       const result = await response.json();
       if (!response.ok) {
         console.error("Login error:", result);
-        alert("Login failed: " + result.message);
+        toast.error("Login failed: " + result.message);
         return;
       }
       await refreshUser();
       navigate(isEmployee ? "/employee/dashboard" : "/dashboard");
     } catch (error) {
       console.error("Error during login:", error);
-      alert("An error occurred during login. Check console for details.");
+      toast.error("An error occurred during login. Check console for details.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50">
-      {/* Minimal top bar with brand name and back button */}
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 relative">
+      <Toaster position="top-right" />
+      {/* Top bar */}
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
         <button
@@ -163,45 +181,48 @@ function Login() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-white bg-opacity-90 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-screen overflow-y-auto"
+          className="mx-auto relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] px-8 pt-8 pb-4 max-h-[85vh] overflow-y-auto"
         >
-          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">
-            Login
-          </h1>
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 bg-white opacity-75 flex items-center justify-center z-50">
+              <LoadingSpinner />
+            </div>
+          )}
+
+          <h1 className="text-4xl font-bold text-center text-gradient mb-8">Login</h1>
           {step === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 1: Enter Credentials
-              </h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 1: Enter Credentials</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium text-lg">
-                    Email or Mobile Number
-                  </label>
-                  <input
-                    type="text"
-                    name="identifier"
-                    value={credentials.identifier}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
+                  <label className="block font-medium text-lg">Email or Mobile Number</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                      type="text"
+                      name="identifier"
+                      value={credentials.identifier}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full pl-10 p-3 border border-gray-300 rounded-md"
+                    />
+                  </div>
                   {errors.identifier && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.identifier}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>
                   )}
                 </div>
                 <div>
                   <label className="block font-medium text-lg">Password</label>
                   <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
-                      value={credentials.password} // or formData.password in Signup
+                      value={credentials.password}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      className="w-full p-3 pr-12 border border-gray-300 rounded-md"
+                      className="w-full pl-10 p-3 pr-12 border border-gray-300 rounded-md"
                     />
                     <button
                       type="button"
@@ -215,25 +236,21 @@ function Login() {
                     <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                   )}
                 </div>
-
                 <div className="flex items-center space-x-3">
-                  <motion.input
+                  <input
                     type="checkbox"
                     name="isEmployee"
                     checked={isEmployee}
                     onChange={handleChange}
                     className="w-6 h-6 accent-blue-600"
-                    whileTap={{ scale: 1.2 }}
                   />
-                  <span className="text-xl">
-                    If you are an employee, check this
-                  </span>
+                  <span className="text-xl">If you are an employee, check this</span>
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
                 <button
                   onClick={handleCredentialsSubmit}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                 >
                   Login →
                 </button>
@@ -242,31 +259,18 @@ function Login() {
           )}
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 2: Facial Authentication
-              </h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 2: Facial Authentication</h2>
               <p className="mb-4 text-gray-600">
-                Please capture a live photo using your camera. Upload is not
-                allowed.
+                Please capture a live photo using your camera. Upload is not allowed.
               </p>
               <p className="text-sm text-gray-600 mb-4">
-                Ensure your face is well-lit and you're looking straight into
-                the camera for accurate verification.
+                Ensure your face is well-lit and you're looking straight into the camera for accurate verification.
               </p>
               <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
                 {!livePhoto ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                 ) : (
-                  <img
-                    src={livePhoto}
-                    alt="Live Capture"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={livePhoto} alt="Live Capture" className="w-full h-full object-cover" />
                 )}
                 <canvas ref={canvasRef} className="hidden" />
               </div>
@@ -274,29 +278,29 @@ function Login() {
                 {!livePhoto ? (
                   <button
                     onClick={handleCaptureLivePhoto}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                   >
-                    Capture Live Photo
+                    <Camera className="inline mr-2" size={20} /> Capture Live Photo
                   </button>
                 ) : (
                   <button
                     onClick={handleRedo}
-                    className="opacity-80 w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                   >
-                    ReCapture
+                    <Camera className="inline mr-2" size={20} /> ReCapture
                   </button>
                 )}
               </div>
               <div className="mt-8 flex justify-between">
                 <button
                   onClick={() => setStep(1)}
-                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all"
+                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition"
                 >
                   ← Prev
                 </button>
                 <button
                   onClick={handleFaceAuth}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                 >
                   Proceed →
                 </button>
