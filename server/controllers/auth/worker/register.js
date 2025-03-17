@@ -1,21 +1,18 @@
-const User = require("../../models/User");
-const Customer = require("../../models/Customer");
+const User = require("../../../models/User");
+const Worker = require("../../../models/Worker");
+const Department= require("../../../models/Department");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const FormData= require("form-data")
 const register = async (req, res) => {
-  const { fullName, email, password, phoneNumber } = req.body;
-  console.log(req.files)
-  const face_img= req.files.face_img[0];
+  const { fullName, email, password, phoneNumber, department } = req.body;
+
+  const face_img= req.file;
   if(!face_img){
     return res.status(400).json({ message: "Face image is required" });
   }
-  const audio = req.files.audio[0];
-  console.log(audio)
-  if(!audio){
-    return res.status(400).json({ message: "Audio data is required" });
-  }
-  if (!fullName || !password || !phoneNumber || !face_img) {
+
+  if (!fullName || !password || !phoneNumber || !face_img || !department) {
     return res.status(400).json({ message: "All fields are required" });
   }
   if (await User.findOne({ where: { email } })) {
@@ -27,6 +24,11 @@ const register = async (req, res) => {
     return res
       .status(400)
       .json({ message: "User with this phone number already exists" });
+  }
+  //check department, it exists, get the ID, return error if not
+  const dept= await Department.findOne({ where: { departmentName: department } });
+  if(!dept){
+    return res.status(400).json({ message: "Department does not exist" });
   }
 
   try {
@@ -41,17 +43,7 @@ const register = async (req, res) => {
     if(face_data.data.error){
       return res.status(400).json({ message: face_data.data.error });
     }
-    const formDataAudio = new FormData();
-    formDataAudio.append("audio", audio.buffer, {
-      filename: audio.originalname,
-      contentType: audio.mimetype
-    })
-    const audio_data= await axios.post("http://localhost:8000/get_voice_embedding", formDataAudio,{
-      headers: { "Content-Type": "multipart/form-data" }
-    })
-    if(audio_data.data.error){
-      return res.status(400).json({ message: audio_data.data.error });
-    }
+    
     //all checks done
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
@@ -60,13 +52,13 @@ const register = async (req, res) => {
       password: passwordHash,
       phoneNumber,
       face_data: face_data.data.embedding,
-      role: "customer",
+      role: "worker",
     });
-    await Customer.create({
+    await Worker.create({
       userID: user.userID,
-      audio_data: audio_data.data.embedding
-    });
-    res.status(201).json({ message: "User registered successfully" });
+      departmentID: dept.departmentID
+    })
+    res.status(201).json({ message: "Worker registered successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

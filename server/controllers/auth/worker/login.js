@@ -1,9 +1,9 @@
-const User = require("../../models/User");
+const User = require("../../../models/User");
 const bcrypt = require("bcryptjs");
 const {Op}=  require("sequelize");
 const FormData = require('form-data');
 const axios = require('axios');
-const setCookie = require("../../utils/jwt");
+const setCookie = require("../../../utils/jwt");
 const login = async (req, res) => {
     const {phoneNumber, password, email} = req.body;
     if(!phoneNumber && !email){
@@ -41,6 +41,9 @@ const login = async (req, res) => {
 
         if(!user){
             return res.status(400).json({message: "User not found"});
+        }
+        if(!(user.role === "worker")){
+            return res.status(403).json({message: "User is not a worker"});
         }
         if(!(await bcrypt.compare(password, user.password))){
             return res.status(400).json({message: "Invalid credentials"});
