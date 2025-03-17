@@ -1,7 +1,7 @@
 // EmployeeDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";  // <--- import
+import { useAuth } from "../context/AuthContext"; 
 import {
     Users,
     Clock,
@@ -14,7 +14,7 @@ import {
 
 function EmployeeDashboard() {
     const { user, logout } = useAuth();
-    const employeeName = user ? user.fullName : "Employee";  // <--- fetch from context
+    const employeeName = user ? user.fullName : "Employee";
 
     const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
@@ -31,11 +31,10 @@ function EmployeeDashboard() {
     };
     
 
-        // Dummy data for live queries
         const liveQueries = [
             {
                 id: "UBI123456",
-                customerName: "John Doe",
+                customerName: "test pratham",
                 type: "Account Services",
                 status: "Waiting",
                 time: "10:30 AM",
@@ -43,7 +42,7 @@ function EmployeeDashboard() {
             },
             {
                 id: "UBI123457",
-                customerName: "Jane Smith",
+                customerName: "test varnika",
                 type: "Loan Enquiry",
                 status: "In Progress",
                 time: "10:45 AM",
@@ -51,18 +50,17 @@ function EmployeeDashboard() {
             },
         ];
 
-        // Dummy data for today's appointments
         const todayAppointments = [
             {
                 id: 1,
-                customerName: "Alice Johnson",
+                customerName: "test amaan",
                 time: "11:00 AM",
                 type: "Video Call",
                 status: "Scheduled",
             },
             {
                 id: 2,
-                customerName: "Bob Wilson",
+                customerName: "test keshav",
                 time: "2:30 PM",
                 type: "Instant Query",
                 status: "Pending",
@@ -154,7 +152,6 @@ function EmployeeDashboard() {
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Live Queries Section */}
                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-semibold text-blue-900">
@@ -197,7 +194,6 @@ function EmployeeDashboard() {
                                 </div>
                             </div>
 
-                            {/* Today's Appointments Section */}
                             <div className="bg-white rounded-2xl shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-semibold text-blue-900">

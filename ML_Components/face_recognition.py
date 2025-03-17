@@ -31,7 +31,7 @@ def get_face_embedding(image_array, model_name="Facenet"):
     except Exception as e:
         return {"error": f"Error processing image: {str(e)}"}
 
-def compare_faces(img1_path, img2_path, cosine_threshold=0.5, euclidean_threshold=10):
+def compare_faces(img1_path, img2_path, cosine_threshold=0.1, euclidean_threshold=10):
 
  
     embedding1 = get_face_embedding(img1_path)

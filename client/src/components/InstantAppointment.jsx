@@ -16,10 +16,9 @@ const InstantAppointment = () => {
   }, []);
 
   useEffect(() => {
-    // Simulate loading time
     const timer = setTimeout(() => {
       setIsLoading(false);
-      setMeetLink("https://meet.ubi.com/xyz123"); // This would be generated dynamically
+      setMeetLink("https://meet.ubi.com/xyz123"); 
     }, 3000);
     return () => clearTimeout(timer);
   }, []);

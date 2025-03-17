@@ -20,11 +20,10 @@ const EmployeeAppointments = () => {
     navigate("/");
   };
 
-  // Dummy data for appointments
   const appointments = [
     {
       id: 1,
-      customerName: "John Doe",
+      customerName: "test pratham",
       time: "10:00 AM",
       date: "2025-03-20",
       type: "Video Call",
@@ -40,7 +39,7 @@ const EmployeeAppointments = () => {
     },
     {
       id: 2,
-      customerName: "Jane Smith",
+      customerName: "test varnika",
       time: "11:30 AM",
       date: "2025-03-20",
       type: "Instant Query",
@@ -56,7 +55,7 @@ const EmployeeAppointments = () => {
     },
     {
       id: 3,
-      customerName: "Alice Johnson",
+      customerName: "test amaan",
       time: "2:00 PM",
       date: "2025-03-20",
       type: "Video Call",
@@ -72,7 +71,7 @@ const EmployeeAppointments = () => {
     },
     {
       id: 4,
-      customerName: "Bob Wilson",
+      customerName: "test keshav",
       time: "3:30 PM",
       date: "2025-03-20",
       type: "Instant Query",
@@ -136,7 +135,6 @@ const EmployeeAppointments = () => {
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Appointments List */}
           <div className="space-y-4">
             {appointments.map((appointment) => (
               <div
@@ -174,7 +172,6 @@ const EmployeeAppointments = () => {
             ))}
           </div>
 
-          {/* Appointment Details */}
           {selectedAppointment ? (
             <div className="bg-white p-8 rounded-2xl shadow-lg">
               <div className="flex items-center justify-between mb-6">
