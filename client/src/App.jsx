@@ -19,6 +19,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import InstantAppointment from "./components/InstantAppointment";
 import ScheduleAppointment from "./components/ScheduleAppointment";
 import Appointments from "./components/Appointments";
+import EmployeeDashboard from "./components/EmployeeDashboard";
 
 /* LandingPage component renders the public homepage sections */
 function LandingPage({
@@ -143,6 +144,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+
       </Routes>
     </Router>
   );

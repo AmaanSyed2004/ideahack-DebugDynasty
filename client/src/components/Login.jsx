@@ -2,12 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+// Helper to convert dataURL to File
+const dataURLtoFile = (dataurl, filename) => {
+  let arr = dataurl.split(',');
+  let mime = arr[0].match(/:(.*?);/)[1];
+  let bstr = atob(arr[1]);
+  let n = bstr.length;
+  let u8arr = new Uint8Array(n);
+  while(n--){
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
 function Login() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [credentials, setCredentials] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
   const [livePhoto, setLivePhoto] = useState(null);
+  const [isEmployee, setIsEmployee] = useState(false); // NEW: state for employee checkbox
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -22,8 +36,12 @@ function Login() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (name === 'isEmployee') {
+      setIsEmployee(checked);
+    } else {
+      setCredentials(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleBlur = (e) => {
@@ -31,10 +49,18 @@ function Login() {
     validateField(name, value);
   };
 
+  // Modified: if the "I am an Employee" box is checked, immediately redirect to employee login.
   const handleCredentialsSubmit = () => {
     const err1 = validateField('identifier', credentials.identifier);
     const err2 = validateField('password', credentials.password);
     if (err1 || err2) return;
+    
+    if(isEmployee) {
+      // Redirect to the employee login component/route
+      navigate('/employee/dashboard');
+      return;
+    }
+    
     setStep(2);
   };
 
@@ -67,7 +93,6 @@ function Login() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
-      // Draw the current video frame onto the canvas and generate a JPEG data URL
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
       setLivePhoto(dataUrl);
@@ -80,19 +105,6 @@ function Login() {
   const handleRedo = () => {
     setLivePhoto(null);
     setStep(2);
-  };
-
-  // Helper to convert dataURL to File
-  const dataURLtoFile = (dataurl, filename) => {
-    let arr = dataurl.split(',');
-    let mime = arr[0].match(/:(.*?);/)[1];
-    let bstr = atob(arr[1]);
-    let n = bstr.length;
-    let u8arr = new Uint8Array(n);
-    while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
   };
 
   const handleFaceAuth = async () => {
@@ -116,7 +128,6 @@ function Login() {
       console.log("Sending login request with formData:", formData);
       const response = await fetch("http://localhost:5555/auth/login", {
         method: "POST",
-        // Ensure credentials are sent if needed (e.g., for cross-site cookies)
         credentials: 'include',
         body: formData
       });
@@ -127,7 +138,6 @@ function Login() {
         return;
       }
       console.log("Login successful:", result);
-      // Store a flag in localStorage so ProtectedRoute can detect authentication
       localStorage.setItem("isLoggedIn", "true");
       navigate('/dashboard');
     } catch (error) {
@@ -164,7 +174,7 @@ function Login() {
                     value={credentials.identifier}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
                 </div>
@@ -176,9 +186,19 @@ function Login() {
                     value={credentials.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 leading-relaxed border border-gray-300 rounded-md"
+                    className="w-full p-3 border border-gray-300 rounded-md"
                   />
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                </div>
+                <div className="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    name="isEmployee" 
+                    checked={isEmployee} 
+                    onChange={handleChange} 
+                    className="mr-2" 
+                  />
+                  <span className="text-sm">I am an Employee</span>
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
