@@ -3,8 +3,8 @@ const cors= require('cors');
 require('dotenv').config();
 
 const sequelize = require('./config/db'); 
-const authRouter = require('./routes/auth');
-
+const authRouterCustomer = require('./routes/authCustomer');
+const authRouterWorker = require('./routes/authWorker');
 
 const app = express();
 
@@ -15,7 +15,8 @@ app.use(cors({
   
 app.use(express.json());
 
-app.use('/auth', authRouter);
+app.use('/auth/customer', authRouterCustomer);
+app.use('/auth/worker', authRouterWorker);
 sequelize.sync({ alter: true }).then(()=>{ 
     app.listen(5555, () => {
         console.log(`Server is running on http://localhost:5555`);
