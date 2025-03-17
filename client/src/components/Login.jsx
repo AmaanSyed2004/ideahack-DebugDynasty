@@ -192,29 +192,30 @@ function Login() {
                     </p>
                   )}
                 </div>
-                <div className="relative">
+                <div>
                   <label className="block font-medium text-lg">Password</label>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={credentials.password}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="w-full p-3 pr-12 border border-gray-300 rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={credentials.password} // or formData.password in Signup
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full p-3 pr-12 border border-gray-300 rounded-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.password}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                   )}
                 </div>
+
                 <div className="flex items-center space-x-3">
                   <motion.input
                     type="checkbox"

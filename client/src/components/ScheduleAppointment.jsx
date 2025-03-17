@@ -35,7 +35,7 @@ const ScheduleAppointment = () => {
 
   if (isConfirmed) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen bg-blue-50">
         <nav
           className={`fixed w-full z-50 transition-all duration-300 ${
             isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"
@@ -93,8 +93,7 @@ const ScheduleAppointment = () => {
                     <strong>Time:</strong> {selectedTime}
                   </p>
                   <p className="text-gray-700">
-                    <strong>Meeting Link:</strong> Will be sent 30 minutes
-                    before
+                    <strong>Meeting Link:</strong> Will be sent 30 minutes before
                   </p>
                 </div>
               </div>
@@ -116,7 +115,7 @@ const ScheduleAppointment = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-blue-50">
       <nav
         className={`fixed w-full z-50 transition-all duration-300 ${
           isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"
