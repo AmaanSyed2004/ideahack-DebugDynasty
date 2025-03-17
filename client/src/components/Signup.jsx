@@ -509,29 +509,27 @@ function Signup() {
                     </p>
                   )}
                 </div>
-                <div className="relative">
-                  <label className="block font-medium text-lg">
-                    Set Password
-                  </label>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className="w-full p-3 pr-12 border border-gray-300 rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+                <div>
+                  <label className="block font-medium text-lg">Set Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password} // use formData.password
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className="w-full p-3 pr-12 border border-gray-300 rounded-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.password}
-                    </p>
+                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                   )}
                 </div>
               </div>
@@ -828,8 +826,8 @@ function Signup() {
                     {formData.passportPhoto
                       ? formData.passportPhoto.name
                       : formData.capturedPhoto
-                      ? "Captured Photo"
-                      : "Not Provided"}
+                        ? "Captured Photo"
+                        : "Not Provided"}
                   </span>
                 </div>
                 <div className="flex justify-between">

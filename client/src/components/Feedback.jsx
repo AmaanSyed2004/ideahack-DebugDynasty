@@ -48,7 +48,7 @@ const Feedback = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen bg-blue-50">
         <nav
           className={`fixed w-full z-50 transition-all duration-300 ${
             isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"
@@ -107,7 +107,7 @@ const Feedback = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-blue-50">
       <nav
         className={`fixed w-full z-50 transition-all duration-300 ${
           isScrolled ? "glass-effect shadow-lg" : "bg-blue-50"
