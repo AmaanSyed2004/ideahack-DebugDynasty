@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
 // Helper to convert an uploaded file to a data URL
 function convertFileToDataUrl(file) {
@@ -40,6 +41,7 @@ function audioBufferToWav(buffer, opt) {
   var sampleRate = buffer.sampleRate;
   var format = opt.float32 ? 3 : 1;
   var bitDepth = format === 3 ? 32 : 16;
+
   var result;
   if (numChannels === 2) {
     result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
@@ -51,11 +53,13 @@ function audioBufferToWav(buffer, opt) {
   var totalLength = headerLength + bufferLength;
   var arrayBuffer = new ArrayBuffer(totalLength);
   var view = new DataView(arrayBuffer);
+
   function writeString(view, offset, string) {
     for (var i = 0; i < string.length; i++) {
       view.setUint8(offset + i, string.charCodeAt(i));
     }
   }
+
   writeString(view, 0, "RIFF");
   view.setUint32(4, 36 + bufferLength, true);
   writeString(view, 8, "WAVE");
@@ -64,11 +68,12 @@ function audioBufferToWav(buffer, opt) {
   view.setUint16(20, format, true);
   view.setUint16(22, numChannels, true);
   view.setUint32(24, sampleRate, true);
-  view.setUint32(28, (sampleRate * numChannels * bitDepth) / 8, true);
-  view.setUint16(32, (numChannels * bitDepth) / 8, true);
+  view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
+  view.setUint16(32, numChannels * bitDepth / 8, true);
   view.setUint16(34, bitDepth, true);
   writeString(view, 36, "data");
   view.setUint32(40, bufferLength, true);
+
   if (format === 1) {
     let offset = 44;
     for (let i = 0; i < result.length; i++, offset += 2) {
@@ -119,6 +124,11 @@ function Signup() {
   const fileInputRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // NEW: For Twilio OTP
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
@@ -131,15 +141,21 @@ function Signup() {
           error = "Enter a valid 10-digit mobile number.";
         break;
       case "email":
-        if (value.trim() && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value.trim()))
+        if (
+          value.trim() &&
+          !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value.trim())
+        )
           error = "Enter a valid email address.";
         break;
       case "password":
         if (!value.trim()) error = "Password is required.";
         else if (
-          !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(value.trim())
+          !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(
+            value.trim()
+          )
         )
-          error = "Password must be at least 6 characters and include uppercase, lowercase, a number, and a symbol.";
+          error =
+            "Password must be at least 6 characters and include uppercase, lowercase, a number, and a symbol.";
         break;
       case "aadhaarNumber":
         if (!value.trim()) error = "Aadhaar Number is required.";
@@ -162,7 +178,11 @@ function Signup() {
     const { name, value, files } = e.target;
     if (files) {
       if (name === "passportPhoto") {
-        setFormData((prev) => ({ ...prev, passportPhoto: files[0], capturedPhoto: null }));
+        setFormData((prev) => ({
+          ...prev,
+          passportPhoto: files[0],
+          capturedPhoto: null,
+        }));
       } else {
         setFormData((prev) => ({ ...prev, [name]: files[0] }));
       }
@@ -188,6 +208,12 @@ function Signup() {
       const err1 = validateField("aadhaarNumber", formData.aadhaarNumber);
       const err2 = validateField("panNumber", formData.panNumber);
       if (err1 || err2) return;
+
+      // Also ensure OTP is verified
+      if (!otpVerified) {
+        alert("Please verify your phone number via OTP before continuing.");
+        return;
+      }
     }
     if (step === 3) {
       if (!formData.passportPhoto && !formData.capturedPhoto) {
@@ -198,7 +224,10 @@ function Signup() {
         return;
       }
       if (!audioURL) {
-        setErrors((prev) => ({ ...prev, audioRecording: "Please record audio as instructed." }));
+        setErrors((prev) => ({
+          ...prev,
+          audioRecording: "Please record audio as instructed.",
+        }));
         return;
       }
       setFormData((prev) => ({ ...prev, audioRecording: audioURL }));
@@ -207,6 +236,7 @@ function Signup() {
   };
 
   const handlePrev = () => setStep(step - 1);
+
   const handleVerify = async () => {
     handleNext();
   };
@@ -229,8 +259,10 @@ function Signup() {
         return;
       }
       const wavBlob = await convertWebmToWav(audioBlob);
-      const audioFile = new File([wavBlob], "audio.wav", { type: "audio/wav" });
-      
+      const audioFile = new File([wavBlob], "audio.wav", {
+        type: "audio/wav",
+      });
+
       const formDataToSend = new FormData();
       formDataToSend.append("fullName", formData.fullNameAadhaar);
       formDataToSend.append("email", formData.email);
@@ -258,7 +290,7 @@ function Signup() {
     }
   };
 
-  // Audio recording functions
+  // Audio recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -272,7 +304,9 @@ function Signup() {
         const url = URL.createObjectURL(recordedBlob);
         setAudioURL(url);
         setAudioBlob(recordedBlob);
-        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
       };
       mediaRecorderRef.current.start();
       setRecording(true);
@@ -293,7 +327,7 @@ function Signup() {
     setAudioBlob(null);
   };
 
-  // Live Photo Capture Functions
+  // Live Photo Capture
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -345,28 +379,86 @@ function Signup() {
     }
   };
 
+  // NEW: Twilio OTP logic
+  const sendOTP = async () => {
+    try {
+      if (!formData.mobile) {
+        alert("Please fill in your mobile number in Step 1 first.");
+        return;
+      }
+      // Example: phone must have +countryCode, but for hackathon, we can do +91...
+      const phoneWithCountry = "+91" + formData.mobile;
+      const res = await axios.post("http://localhost:5555/auth/send-otp", {
+        phoneNumber: phoneWithCountry,
+      });
+      if (res.data.success) {
+        setOtpSent(true);
+        alert("OTP sent successfully to " + phoneWithCountry);
+      } else {
+        alert(res.data.message || "Failed to send OTP");
+      }
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      alert("Error sending OTP. Check console for details.");
+    }
+  };
+
+  const verifyOTP = async () => {
+    try {
+      if (!otp) {
+        alert("Please enter the OTP.");
+        return;
+      }
+      const phoneWithCountry = "+91" + formData.mobile;
+      const res = await axios.post("http://localhost:5555/auth/verify-otp", {
+        phoneNumber: phoneWithCountry,
+        code: otp,
+      });
+      if (res.data.success) {
+        setOtpVerified(true);
+        alert("OTP verified successfully.");
+      } else {
+        alert(res.data.message || "Invalid OTP");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      alert("Error verifying OTP. Check console for details.");
+    }
+  };
+
   return (
-    <div className="min-h-screen w-full flex flex-col bg-blue-50 font-roboto">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 font-roboto">
+      {/* Minimal top bar with brand name and back button */}
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
-        <button onClick={() => navigate("/")} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
+        <button
+          onClick={() => navigate("/")}
+          className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md"
+        >
           Back to Home
         </button>
       </div>
+
       <div className="flex-1 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-blue-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-screen overflow-y-auto"
+          className="relative bg-white bg-opacity-90 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-screen overflow-y-auto"
         >
-          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Sign Up</h1>
+          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">
+            Sign Up
+          </h1>
           {step === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 1: User Details Input</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 1: User Details Input
+              </h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium text-lg">Full Name (as per Aadhaar/PAN)</label>
+                  <label className="block font-medium text-lg">
+                    Full Name (as per Aadhaar/PAN)
+                  </label>
                   <input
                     type="text"
                     name="fullNameAadhaar"
@@ -375,10 +467,16 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
+                  {errors.fullNameAadhaar && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.fullNameAadhaar}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-medium text-lg">Mobile Number</label>
+                  <label className="block font-medium text-lg">
+                    Mobile Number
+                  </label>
                   <input
                     type="tel"
                     name="mobile"
@@ -387,10 +485,16 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                  {errors.mobile && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.mobile}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-medium text-lg">Email Address (optional)</label>
+                  <label className="block font-medium text-lg">
+                    Email Address (optional)
+                  </label>
                   <input
                     type="email"
                     name="email"
@@ -399,10 +503,16 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
                 <div className="relative">
-                  <label className="block font-medium text-lg">Set Password</label>
+                  <label className="block font-medium text-lg">
+                    Set Password
+                  </label>
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
@@ -414,15 +524,22 @@ function Signup() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
-                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
-                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                >
                   Next →
                 </button>
               </div>
@@ -430,10 +547,14 @@ function Signup() {
           )}
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar & PAN Verification</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 2: Aadhaar & PAN Verification
+              </h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium text-lg">Enter Aadhaar Number</label>
+                  <label className="block font-medium text-lg">
+                    Enter Aadhaar Number
+                  </label>
                   <input
                     type="text"
                     name="aadhaarNumber"
@@ -442,10 +563,16 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
+                  {errors.aadhaarNumber && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.aadhaarNumber}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block font-medium text-lg">Enter PAN Number</label>
+                  <label className="block font-medium text-lg">
+                    Enter PAN Number
+                  </label>
                   <input
                     type="text"
                     name="panNumber"
@@ -454,14 +581,67 @@ function Signup() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.panNumber && <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>}
+                  {errors.panNumber && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.panNumber}
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {/* Twilio OTP Buttons/Field */}
+              <div className="mt-6 space-y-4 bg-gray-50 p-4 rounded-xl">
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={sendOTP}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+                  >
+                    Send OTP
+                  </button>
+                  {otpSent && (
+                    <span className="text-green-600 font-medium">
+                      OTP Sent!
+                    </span>
+                  )}
+                </div>
+
+                {otpSent && (
+                  <div className="space-y-3">
+                    <label className="block text-lg font-medium">
+                      Enter OTP:
+                    </label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md"
+                    />
+                    <button
+                      onClick={verifyOTP}
+                      className="px-6 py-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
+                    >
+                      Verify OTP
+                    </button>
+                  </div>
+                )}
+                {otpVerified && (
+                  <p className="text-green-700 font-semibold">
+                    Phone Verified Successfully!
+                  </p>
+                )}
+              </div>
+
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handlePrev}
+                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition"
+                >
                   ← Prev
                 </button>
-                <button onClick={handleVerify} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handleVerify}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                >
                   Verify →
                 </button>
               </div>
@@ -469,10 +649,15 @@ function Signup() {
           )}
           {step === 3 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 3: Identity Authentication (Facial & Audio)</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 3: Identity Authentication (Facial & Audio)
+              </h2>
               <div className="space-y-6">
+                {/* Photo */}
                 <div>
-                  <label className="block font-medium mb-2">Passport Photo or Live Photo</label>
+                  <label className="block font-medium mb-2">
+                    Passport Photo or Live Photo
+                  </label>
                   <div className="flex flex-col items-center space-y-4">
                     <input
                       ref={fileInputRef}
@@ -512,7 +697,12 @@ function Signup() {
                       </div>
                     ) : isCapturing ? (
                       <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
-                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
                         <canvas ref={canvasRef} className="hidden" />
                         <button
                           onClick={handleCapturePhoto}
@@ -529,46 +719,78 @@ function Signup() {
                         Capture Live Photo
                       </button>
                     )}
-                    {errors.passportPhoto && <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>}
+                    {errors.passportPhoto && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.passportPhoto}
+                      </p>
+                    )}
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
-                    Ensure your face is clearly visible, in a well-lit environment, and you are looking straight into the camera.
+                    Ensure your face is clearly visible, in a well-lit
+                    environment, and you are looking straight into the camera.
                   </p>
                 </div>
+
+                {/* Audio */}
                 <div>
-                  <label className="block font-medium mb-2">Record Audio (Say the pre-decided phrase)</label>
+                  <label className="block font-medium mb-2">
+                    Record Audio (Say the pre-decided phrase)
+                  </label>
                   <div className="flex flex-col items-center space-y-3">
                     {!recording && !audioURL && (
-                      <button onClick={startRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                      <button
+                        onClick={startRecording}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                      >
                         Record Audio
                       </button>
                     )}
                     {recording && (
-                      <button onClick={stopRecording} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                      <button
+                        onClick={stopRecording}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                      >
                         Stop Recording
                       </button>
                     )}
                     {audioURL && (
                       <div className="flex flex-col items-center space-y-2 w-full">
                         <audio src={audioURL} controls className="w-full" />
-                        <button onClick={handleRedoAudio} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                        <button
+                          onClick={handleRedoAudio}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                        >
                           Re-record Audio
                         </button>
                       </div>
                     )}
-                    {errors.audioRecording && <p className="text-red-500 text-sm mt-1">{errors.audioRecording}</p>}
+                    {errors.audioRecording && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.audioRecording}
+                      </p>
+                    )}
                   </div>
                   <div className="mt-1">
-                    <p className="text-sm text-gray-600">Random Phrase: {randomPhrase}</p>
-                    <p className="text-sm text-gray-600 mt-2">Please record in a quiet environment and speak clearly.</p>
+                    <p className="text-sm text-gray-600">
+                      Random Phrase: {randomPhrase}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Please record in a quiet environment and speak clearly.
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handlePrev}
+                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition"
+                >
                   ← Prev
                 </button>
-                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handleNext}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                >
                   Next →
                 </button>
               </div>
@@ -576,8 +798,10 @@ function Signup() {
           )}
           {step === 4 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 4: Final Review & Submission</h2>
-              <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 4: Final Review & Submission
+              </h2>
+              <div className="bg-gray-50 rounded-lg shadow p-6 space-y-4">
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Full Name:</span>
                   <span>{formData.fullNameAadhaar}</span>
@@ -601,7 +825,11 @@ function Signup() {
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Photo:</span>
                   <span>
-                    {formData.passportPhoto ? formData.passportPhoto.name : formData.capturedPhoto ? "Captured Photo" : "Not Provided"}
+                    {formData.passportPhoto
+                      ? formData.passportPhoto.name
+                      : formData.capturedPhoto
+                      ? "Captured Photo"
+                      : "Not Provided"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -610,10 +838,16 @@ function Signup() {
                 </div>
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={handlePrev} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handlePrev}
+                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition"
+                >
                   ← Prev
                 </button>
-                <button onClick={handleSubmit} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition">
+                <button
+                  onClick={handleSubmit}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                >
                   Confirm & Submit
                 </button>
               </div>

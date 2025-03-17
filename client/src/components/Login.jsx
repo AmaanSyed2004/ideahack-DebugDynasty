@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const dataURLtoFile = (dataurl, filename) => {
   let arr = dataurl.split(",");
@@ -25,21 +25,24 @@ function Login() {
   const [livePhoto, setLivePhoto] = useState(null);
   const [isEmployee, setIsEmployee] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const validateField = (name, value) => {
     let error = "";
-    if (name === "identifier" && !value.trim())
+    if (name === "identifier" && !value.trim()) {
       error = "Email or Mobile Number is required.";
-    if (name === "password" && !value.trim())
+    }
+    if (name === "password" && !value.trim()) {
       error = "Password is required.";
+    }
     setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
     if (name === "isEmployee") {
       setIsEmployee(checked);
     } else {
@@ -119,7 +122,6 @@ function Login() {
       const faceFile = dataURLtoFile(livePhoto, "face.jpg");
       formData.append("face_img", faceFile);
 
-      // Choose endpoint based on checkbox state:
       const endpoint = isEmployee
         ? "http://localhost:5555/auth/worker/login"
         : "http://localhost:5555/auth/customer/login";
@@ -144,27 +146,38 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-blue-50">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50">
+      {/* Minimal top bar with brand name and back button */}
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
-        <button onClick={() => navigate("/")} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
+        <button
+          onClick={() => navigate("/")}
+          className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md"
+        >
           Back to Home
         </button>
       </div>
+
       <div className="flex-1 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-blue-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-screen overflow-y-auto"
+          className="relative bg-white bg-opacity-90 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-screen overflow-y-auto"
         >
-          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Login</h1>
+          <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">
+            Login
+          </h1>
           {step === 1 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 1: Enter Credentials</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 1: Enter Credentials
+              </h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium text-lg">Email or Mobile Number</label>
+                  <label className="block font-medium text-lg">
+                    Email or Mobile Number
+                  </label>
                   <input
                     type="text"
                     name="identifier"
@@ -173,7 +186,11 @@ function Login() {
                     onBlur={handleBlur}
                     className="w-full p-3 border border-gray-300 rounded-md"
                   />
-                  {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
+                  {errors.identifier && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.identifier}
+                    </p>
+                  )}
                 </div>
                 <div className="relative">
                   <label className="block font-medium text-lg">Password</label>
@@ -188,11 +205,15 @@ function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
-                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center space-x-3">
                   <motion.input
@@ -203,11 +224,16 @@ function Login() {
                     className="w-6 h-6 accent-blue-600"
                     whileTap={{ scale: 1.2 }}
                   />
-                  <span className="text-lg">Remember Me (Employee Login)</span>
+                  <span className="text-xl">
+                    If you are an employee, check this
+                  </span>
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
-                <button onClick={handleCredentialsSubmit} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button
+                  onClick={handleCredentialsSubmit}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                >
                   Login →
                 </button>
               </div>
@@ -215,37 +241,62 @@ function Login() {
           )}
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 2: Facial Authentication</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Step 2: Facial Authentication
+              </h2>
               <p className="mb-4 text-gray-600">
-                Please capture a live photo using your camera. Upload is not allowed.
+                Please capture a live photo using your camera. Upload is not
+                allowed.
               </p>
               <p className="text-sm text-gray-600 mb-4">
-                Ensure your face is well-lit and you're looking straight into the camera for accurate verification.
+                Ensure your face is well-lit and you're looking straight into
+                the camera for accurate verification.
               </p>
               <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
                 {!livePhoto ? (
-                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <img src={livePhoto} alt="Live Capture" className="w-full h-full object-cover" />
+                  <img
+                    src={livePhoto}
+                    alt="Live Capture"
+                    className="w-full h-full object-cover"
+                  />
                 )}
                 <canvas ref={canvasRef} className="hidden" />
               </div>
               <div className="mt-4 flex justify-center">
                 {!livePhoto ? (
-                  <button onClick={handleCaptureLivePhoto} className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                  <button
+                    onClick={handleCaptureLivePhoto}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                  >
                     Capture Live Photo
                   </button>
                 ) : (
-                  <button onClick={handleRedo} className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                  <button
+                    onClick={handleRedo}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                  >
                     ReCapture
                   </button>
                 )}
               </div>
               <div className="mt-8 flex justify-between">
-                <button onClick={() => setStep(1)} className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all">
+                <button
+                  onClick={() => setStep(1)}
+                  className="px-8 py-3 bg-gray-300 text-gray-800 rounded-full hover:shadow-lg transition-all"
+                >
                   ← Prev
                 </button>
-                <button onClick={handleFaceAuth} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all">
+                <button
+                  onClick={handleFaceAuth}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                >
                   Proceed →
                 </button>
               </div>
