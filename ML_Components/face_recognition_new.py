@@ -1,73 +1,59 @@
 from deepface import DeepFace
-import os
 import cv2
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-def get_arcface_embedding(image_path, enforce_detection=True):
+def get_arcface_embedding(image_array):
     """
-    Extract the face embedding from an image using the pre-trained ArcFace model
-    with RetinaFace as the detector for robust and accurate face detection.
+    Extracts a face embedding from an image using DeepFace's ArcFace model.
     
     Args:
-        image_path (str): Path to the input image.
-        enforce_detection (bool): If True, errors if no face is detected.
-    
+        image_array (numpy.ndarray): The input image as a NumPy array.
+
     Returns:
-        list: The face embedding vector, or None if no face is found.
+        list or dict: The face embedding vector, or an error message if no face is found.
     """
-    # Check if the file exists first.
-    if not os.path.exists(image_path):
-        print(f"Error: File '{image_path}' does not exist. Please confirm the path is correct.")
-        return None
-
     try:
-        embeddings = DeepFace.represent(
-            img_path=image_path, 
-            model_name="ArcFace", 
-            detector_backend="retinaface", 
-            enforce_detection=enforce_detection
-        )
-        # If DeepFace returns an empty list or does not include an embedding, return None.
-        if embeddings is None or len(embeddings) == 0:
-            print(f"Error: No face detected in {image_path}.")
-            return None
-        return embeddings[0].get('embedding', None)
-    except Exception as e:
-        print(f"Error processing {image_path}: {e}")
-        return None
+        # Convert NumPy array to BGR format (DeepFace expects a file path, so we provide the image directly)
+        img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-def compare_images(image_path1, image_path2, threshold=0.5):
+        # Extract embeddings using DeepFace
+        embeddings = DeepFace.represent(
+            img_path=img,
+            model_name="ArcFace",
+            detector_backend="retinaface",
+            enforce_detection=True
+        )
+
+        if not embeddings:
+            return {"error": "No face detected."}
+
+        return embeddings[0]['embedding']
+    
+    except Exception as e:
+        return {"error": f"Failed to process image: {str(e)}"}
+
+def compare_face_and_embedding(embedding, image_array, threshold=0.5):
     """
-    Compare two images using their ArcFace embeddings with cosine similarity.
+    Compares a stored face embedding with a new image using cosine similarity.
     
     Args:
-        image_path1 (str): Path to the first image.
-        image_path2 (str): Path to the second image.
-        threshold (float): Cosine similarity threshold for matching.
+        embedding (list): The stored embedding from the database.
+        image_array (numpy.ndarray): The input image as a NumPy array.
+        threshold (float): Similarity threshold for a match.
+
+    Returns:
+        dict: Match result and similarity score.
     """
-    emb1 = get_arcface_embedding(image_path1)
-    emb2 = get_arcface_embedding(image_path2)
+    new_embedding = get_arcface_embedding(image_array)
 
-    if emb1 is None or emb2 is None:
-        print("Face detection failed for one or both images. Ensure the files exist and contain a clear, frontal face.")
-        return
+    if isinstance(new_embedding, dict) and "error" in new_embedding:
+        return new_embedding  # Return the error message
 
-    # Compute cosine similarity (higher is better).
-    cosine_sim = cosine_similarity([emb1], [emb2])[0][0]
+    # Compute cosine similarity
+    similarity_score = cosine_similarity([embedding], [new_embedding])[0][0]
 
-    print(f"Image 1: {image_path1}")
-    print(f"Image 2: {image_path2}")
-    print(f"Cosine Similarity: {cosine_sim:.4f}")
-
-    if cosine_sim >= threshold:
-        print("Result: ✅ Same person")
-    else:
-        print("Result: ❌ Different persons")
-
-if __name__ == "__main__":
-    # Hard-code your paths here instead of using input().
-    image_path1 = "./reference.jpg"    # Replace with your actual path
-    image_path2 = "./varnika1.jpeg"    # Replace with your actual path
-
-    compare_images(image_path1, image_path2)
+    return {
+    "is_match": bool(similarity_score >= threshold),
+    "similarity": float(similarity_score)
+}

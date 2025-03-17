@@ -1,60 +1,83 @@
-# main.py
-import os
-import transcription
-from final_query_categorisation import process_file_query, process_text_query
+import logging
+import json
+import numpy as np
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
-from typing import Annotated, Optional
-import numpy as np
-import json
-import ast
-from face_recognition import get_face_embedding, compare_face_and_embedding
+from typing import Annotated
+from face_recognition_new import get_arcface_embedding, compare_face_and_embedding
 from speech_recognition import get_voice_embedding, compare_voice_and_embedding
-import logging
-import pickle
+from final_query_categorisation import process_file_query, process_text_query
 
 app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
 
 @app.post("/get_face_embedding")
 async def upload_image(image: Annotated[UploadFile, File(...)]):
+    """
+    Extracts a face embedding from an uploaded image.
+    """
     try:
         image_bytes = await image.read()
         np_arr = np.frombuffer(image_bytes, np.uint8)
-        result = get_face_embedding(np_arr)
-        return result
+        result = get_arcface_embedding(np_arr)
+
+        if isinstance(result, dict) and "error" in result:
+            return JSONResponse(content=result, status_code=400)
+        
+        return JSONResponse(content={"embedding": result})
+    
     except Exception as e:
-        return {"error": f"Failed to process image: {str(e)}"}
+        return JSONResponse(content={"error": f"Failed to process image: {str(e)}"}, status_code=400)
 
 @app.post("/verify_face")
 async def compare_faces(image: Annotated[UploadFile, File(...)], embedding: Annotated[str, Form(...)]):
+    """
+    Compares a new image with a stored face embedding.
+    """
     try:
         image_bytes = await image.read()
         image_array = np.frombuffer(image_bytes, np.uint8)
-        embedding_array = json.loads(embedding)
-        result = compare_face_and_embedding(embedding=embedding_array, image_array=image_array)
+
+        # Ensure embedding is a properly formatted JSON string
+        try:
+            embedding_array = json.loads(embedding)
+            if not isinstance(embedding_array, list):
+                return JSONResponse(content={"error": "Invalid embedding format. Expected a JSON list."}, status_code=400)
+        except json.JSONDecodeError as e:
+            return JSONResponse(content={"error": f"Invalid JSON format in embedding: {str(e)}"}, status_code=400)
+
+        result = compare_face_and_embedding(embedding_array, image_array)
         return result
+    
     except Exception as e:
-        return {"error": f"Failed to process image: {str(e)}"}
+        return JSONResponse(content={"error": f"Failed to process image: {str(e)}"}, status_code=400)
 
 @app.post("/get_voice_embedding")
 async def upload_audio(audio: Annotated[UploadFile, File(...)]):
+    """
+    Extracts a voice embedding from an uploaded audio file.
+    """
     try:
         audio_bytes = await audio.read()
         result = get_voice_embedding(audio_bytes)
         return JSONResponse(content={"embedding": result.tolist()})
-    except Exception as e:
-        return {"error": f"Failed to process audio: {str(e)}"}
     
+    except Exception as e:
+        return JSONResponse(content={"error": f"Failed to process audio: {str(e)}"}, status_code=400)
+
 @app.post("/verify_voice")
 async def compare_voices(audio: Annotated[UploadFile, File(...)], embedding: Annotated[str, Form(...)]):
+    """
+    Compares a voice recording with a stored voice embedding.
+    """
     try:
         audio_bytes = await audio.read()
-        embedding_array = np.array(ast.literal_eval(embedding))
+        embedding_array = np.array(json.loads(embedding))
         result = compare_voice_and_embedding(embedding=embedding_array, audio_file=audio_bytes)
-        return result
+        return JSONResponse(content=result)
+    
     except Exception as e:
-        return {"error": f"Failed to process audio: {str(e)}"}
+        return JSONResponse(content={"error": f"Failed to process audio: {str(e)}"}, status_code=400)
 
 @app.post("/query/file")
 async def query_file(file: UploadFile = File(...)):
