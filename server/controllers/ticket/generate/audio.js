@@ -1,3 +1,4 @@
+// audio.js
 const Department = require("../../../models/Department");
 const ServiceTicket = require("../../../models/ServiceTicket");
 const TicketData = require("../../../models/TicketData");
@@ -22,9 +23,24 @@ const generateAudioTicket = async (req, res) => {
     });
     const { transcribed_text, department } = fastApiResponse.data;
 
+    // Map ML expanded names to the short department names in the database
+    const departmentMapping = {
+      "Loan Services Department": "loan",
+      "Deposit & Account Services Department": "deposit",
+      "Customer Grievance & Fraud Resolution Department": "grievance",
+      "Operations & Service Requests Department": "operation"
+    };
+    const mappedDept = departmentMapping[department] || department;
+
     const sentiment = 0.5; // Dummy value (or integrate sentiment analysis)
     const priority = 0.5;  // Dummy value
-    const dep = await Department.findOne({ where: { departmentName: department } });
+    const dep = await Department.findOne({ where: { departmentName: mappedDept } });
+
+    // Check if department exists before proceeding
+    if (!dep) {
+      return res.status(400).json({ message: `Department "${mappedDept}" not found in DB.` });
+    }
+
     const ticket = await ServiceTicket.create({
       userID: req.user.id,
       departmentID: dep.departmentID,
@@ -44,7 +60,7 @@ const generateAudioTicket = async (req, res) => {
       ticket: {
         ticketID: ticket.ticketID,
         type: "audio",
-        department: department,
+        department: mappedDept,
         transcript: transcribed_text,
       },
     });
@@ -53,5 +69,6 @@ const generateAudioTicket = async (req, res) => {
     return res.status(500).json({ error: error.toString() });
   }
 };
+
 
 module.exports = generateAudioTicket;

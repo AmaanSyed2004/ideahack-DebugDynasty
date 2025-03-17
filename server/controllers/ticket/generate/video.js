@@ -1,3 +1,4 @@
+// video.js
 const Department = require("../../../models/Department");
 const ServiceTicket = require("../../../models/ServiceTicket");
 const TicketData = require("../../../models/TicketData");
@@ -22,10 +23,25 @@ const generateVideoTicket = async (req, res) => {
       headers: formData.getHeaders(),
     });
     const { transcribed_text, department } = fastApiResponse.data;
+    
+    // Map the expanded ML department name to the short database name
+    const departmentMapping = {
+      "Loan Services Department": "loan",
+      "Deposit & Account Services Department": "deposit",
+      "Customer Grievance & Fraud Resolution Department": "grievance",
+      "Operations & Service Requests Department": "operation"
+    };
+    const mappedDept = departmentMapping[department] || department;
 
     const sentiment = 0.5; // Dummy value
     const priority = 0.5;  // Dummy value
-    const dep = await Department.findOne({ where: { departmentName: department } });
+    
+    // Lookup department using the mapped name
+    const dep = await Department.findOne({ where: { departmentName: mappedDept } });
+    if (!dep) {
+      return res.status(400).json({ message: `Department "${mappedDept}" not found in DB.` });
+    }
+    
     const ticket = await ServiceTicket.create({
       userID: req.user.id,
       departmentID: dep.departmentID,
@@ -56,7 +72,7 @@ const generateVideoTicket = async (req, res) => {
       ticket: {
         ticketID: ticket.ticketID,
         type: "video",
-        department: department,
+        department: mappedDept,
         transcript: transcribed_text,
       },
     });

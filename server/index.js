@@ -25,8 +25,9 @@ app.use(express.json());
 
 app.use("/auth/customer", authRouterCustomer);
 app.use("/auth/worker", authRouterWorker);
-app.use("/auth/", otpRouter);
 app.get("/auth/verify", authenticateJWT, verify);
+app.use("/auth/otp", otpRouter);
+
 
 app.use("/ticket/add", addTicketRouter);
 app.use('/ticket/resolve', resolutionRouter);

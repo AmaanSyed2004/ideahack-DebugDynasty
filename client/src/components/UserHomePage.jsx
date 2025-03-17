@@ -1,14 +1,15 @@
-/* UserHomePage.jsx */
+// UserHomePage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CreditCard, Car, Home } from "lucide-react";
 
 function UserHomePage() {
-  const username = "Varnika";
+  // Fetch user name from AuthContext instead of hardcoding
+  const { user, logout } = useAuth();
+  const username = user?.fullName || "User";
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);

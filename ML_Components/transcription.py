@@ -2,7 +2,7 @@
 transcription.py
 Handles audio extraction from uploaded files and transcription using OpenAI's Whisper.
 Dependencies:
-    pip install openai-whisper torch pydub moviepy
+    pip install openai-whisper torch pydub moviepy python-dotenv
 Ensure ffmpeg is installed for pydub and moviepy to work.
 """
 
@@ -10,11 +10,19 @@ import os
 import logging
 import tempfile
 import ctypes.util
+from dotenv import load_dotenv
 
-# Set the FFMPEG_BINARY environment variable
-os.environ["FFMPEG_BINARY"] = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin\ffmpeg.exe"
-# Optionally, add ffmpeg's directory to PATH:
-os.environ["PATH"] = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin;" + os.environ.get("PATH", "")
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the ffmpeg path from environment variables
+ffmpeg_path = os.getenv("FFMPEG_BINARY")
+if ffmpeg_path:
+    os.environ["FFMPEG_BINARY"] = ffmpeg_path
+    # Optionally, add the ffmpeg directory to PATH using FFMPEG_DIR if provided,
+    # otherwise use the directory of the ffmpeg binary.
+    ffmpeg_dir = os.getenv("FFMPEG_DIR", os.path.dirname(ffmpeg_path))
+    os.environ["PATH"] = f"{ffmpeg_dir};" + os.environ.get("PATH", "")
 
 from pydub import AudioSegment
 AudioSegment.converter = os.environ["FFMPEG_BINARY"]
@@ -33,10 +41,9 @@ if os.name == "nt":
 
 import whisper
 
-
-# Explicitly set the ffmpeg path on Windows
+# Explicitly set the ffmpeg path on Windows (redundant if env is set, but kept for safety)
 if os.name == "nt":
-    AudioSegment.converter = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin\ffmpeg.exe"
+    AudioSegment.converter = os.environ["FFMPEG_BINARY"]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
