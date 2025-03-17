@@ -88,11 +88,13 @@ const RaiseQuery = () => {
   const [ticketDetails, setTicketDetails] = useState(null);
   const [streamReady, setStreamReady] = useState(false);
 
+  // Audio recording state and refs
   const [recordingAudio, setRecordingAudio] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioURL, setAudioURL] = useState(null);
   const audioRecorderRef = useRef(null);
 
+  // Video recording state and refs
   const [recordingVideo, setRecordingVideo] = useState(false);
   const [videoBlob, setVideoBlob] = useState(null);
   const [videoURL, setVideoURL] = useState(null);
@@ -125,6 +127,7 @@ const RaiseQuery = () => {
     }
   };
 
+  // --- Audio Recording Functions ---
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -157,6 +160,7 @@ const RaiseQuery = () => {
     setAudioURL(null);
   };
 
+  // --- Video Recording Functions ---
   const startVideoRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -217,6 +221,7 @@ const RaiseQuery = () => {
     cleanupVideoStream();
   };
 
+  // --- Submit Function ---
   const handleSubmit = async () => {
     if (!submissionType) return;
     let response;
@@ -278,13 +283,15 @@ const RaiseQuery = () => {
   const renderVideoRecording = () => (
     <div className="mt-8 text-center">
       {recordingVideo && !videoURL ? (
-        <div className="flex flex-col items-center space-y-4 w-full">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-600 rounded-full animate-ping"></div>
-            <span className="text-sm text-gray-600 font-semibold">
-              RECORDING HAS STARTED
-            </span>
-            <Video className="h-6 w-6 text-red-600" />
+        <div className="flex flex-col items-center space-y-2 w-full">
+          <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden">
+            <video
+              ref={videoPreviewRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
           </div>
           <button
             onClick={stopVideoRecording}

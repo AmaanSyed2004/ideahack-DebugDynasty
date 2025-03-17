@@ -1,81 +1,99 @@
 """
 transcription.py
-
-This module handles extracting audio from a file and transcribing it using Whisper.
-Install the following dependencies before running:
-    
+Handles audio extraction from uploaded files and transcription using OpenAI's Whisper.
+Dependencies:
     pip install openai-whisper torch pydub moviepy
-
-Note: pydub and moviepy require ffmpeg. Make sure ffmpeg is installed.
+Ensure ffmpeg is installed for pydub and moviepy to work.
 """
 
 import os
-import whisper
+import logging
+import tempfile
+import ctypes.util
+
+# Set the FFMPEG_BINARY environment variable
+os.environ["FFMPEG_BINARY"] = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin\ffmpeg.exe"
+# Optionally, add ffmpeg's directory to PATH:
+os.environ["PATH"] = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin;" + os.environ.get("PATH", "")
+
 from pydub import AudioSegment
-from moviepy.editor import VideoFileClip
+AudioSegment.converter = os.environ["FFMPEG_BINARY"]
 
-def extract_audio(input_path, output_audio_path="converted_audio.wav"):
-    """
-    Extracts audio from a video or converts an existing audio file to WAV (16kHz mono).
-    Returns the path to the converted audio file.
-    """
-    file_ext = os.path.splitext(input_path)[-1].lower()
+# --- Monkey Patch for Windows ---
+if os.name == "nt":
+    import ctypes
+    _original_find_library = ctypes.util.find_library
+    def my_find_library(name):
+        lib = _original_find_library(name)
+        if lib is None and name == "c":
+            return "msvcrt.dll"
+        return lib
+    ctypes.util.find_library = my_find_library
+# --- End Patch ---
 
-    # If the input is a video, extract audio
-    if file_ext in [".mp4", ".avi", ".mov", ".mkv", ".flv"]:
-        try:
-            print("Detected video file. Extracting audio...")
-            video = VideoFileClip(input_path)
-            audio = video.audio
-            audio.write_audiofile(output_audio_path, logger=None)
-            video.close()
-            input_path = output_audio_path  # Use extracted audio for further processing
-        except Exception as e:
-            print("Error extracting audio:", e)
+import whisper
+
+
+# Explicitly set the ffmpeg path on Windows
+if os.name == "nt":
+    AudioSegment.converter = r"C:\DOCS_DOWN\ffmpeg-7.1.1-full_build\ffmpeg-7.1.1-full_build\bin\ffmpeg.exe"
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def process_file(file_data: bytes, file_ext: str, model_size="base"):
+    """
+    Processes an uploaded audio/video file from raw bytes, converts it if necessary, and transcribes it.
+    
+    - file_data: Binary content of the file
+    - file_ext: File extension (e.g., '.wav', '.mp3', '.mp4')
+    - model_size: Whisper model size ("base", "small", etc.)
+
+    Returns:
+        Transcribed text (str) or None on failure.
+    """
+    try:
+        # Create a temporary file in the system temp directory
+        temp_file_path = os.path.join(tempfile.gettempdir(), "temp_file" + file_ext)
+        with open(temp_file_path, "wb") as temp_file:
+            temp_file.write(file_data)
+
+        logging.info(f"Temporary file saved at: {temp_file_path}")
+        # Convert and extract audio if needed
+        temp_audio_path = convert_to_wav(temp_file_path)
+
+        if not temp_audio_path:
+            logging.error("Failed to convert/extract audio.")
             return None
 
-    # Convert audio to 16 kHz mono WAV format
+        logging.info("Loading Whisper model...")
+        model = whisper.load_model(model_size)
+
+        logging.info("Transcribing audio...")
+        result = model.transcribe(temp_audio_path)
+
+        # Cleanup temporary files
+        os.remove(temp_file_path)
+        os.remove(temp_audio_path)
+
+        return result["text"]
+
+    except Exception as e:
+        logging.error(f"Error processing file: {e}")
+        return None
+
+def convert_to_wav(input_path):
+    """
+    Converts input audio/video file to WAV (16kHz mono) for Whisper processing.
+    Returns the path to the converted file.
+    """
     try:
-        print("Converting to 16 kHz mono for Whisper...")
+        temp_wav_path = input_path + ".wav"
+        logging.info("Converting audio to 16 kHz mono...")
         audio = AudioSegment.from_file(input_path)
         audio = audio.set_frame_rate(16000).set_channels(1)
-        converted_audio_path = "converted_audio.wav"
-        audio.export(converted_audio_path, format="wav")
-        return converted_audio_path
+        audio.export(temp_wav_path, format="wav")
+        return temp_wav_path
+
     except Exception as e:
-        print("Error processing audio:", e)
+        logging.error(f"Error converting audio: {e}")
         return None
-
-def transcribe_audio_whisper(audio_path, model_size="base"):
-    """
-    Transcribes audio using OpenAI's Whisper model.
-    Returns the transcribed text.
-    """
-    try:
-        print("Loading Whisper model...")
-        model = whisper.load_model(model_size)
-        print("Transcribing audio...")
-        result = model.transcribe(audio_path)
-        return result["text"]
-    except Exception as e:
-        print("Error during transcription:", e)
-        return None
-
-def process_file(input_path):
-    """
-    Processes an audio/video file: extracts audio, converts, and transcribes.
-    Returns the transcription text or None on error.
-    """
-    audio_path = extract_audio(input_path)
-    if audio_path:
-        transcript = transcribe_audio_whisper(audio_path)
-        if transcript:
-            print("Transcription:", transcript)
-            return transcript
-    return None
-
-if __name__ == "__main__":
-    # Example usage: replace 'your_file_path' with an actual file path.
-    file_path = "./complain.mov"
-    transcript = process_file(file_path)
-    print("Final Transcript:", transcript)
