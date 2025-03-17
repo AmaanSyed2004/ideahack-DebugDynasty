@@ -9,7 +9,8 @@ const Department = sequelize.define('Department',{
     },
     departmentName:{
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
     }
 })
 
