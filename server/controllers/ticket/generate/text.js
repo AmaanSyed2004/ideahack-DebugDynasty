@@ -15,10 +15,10 @@ const generateTextTicket = async (req, res) => {
   }
   console.log(req.user)
   try {
-    const sentiment= 0.5 //dummy
-    const priority= 0.5 //dummy
-    const department= "loan" //dummy
-    const dep= await Department.findOne({where: {departmentName: department}})
+    const sentiment = 0.5 //dummy
+    const priority = 0.5 //dummy
+    const department = "loan" //dummy
+    const dep = await Department.findOne({ where: { departmentName: department } })
     const ticket = await ServiceTicket.create({
       userID: req.user.id,
       departmentID: dep.departmentID,
@@ -30,11 +30,20 @@ const generateTextTicket = async (req, res) => {
       content: data,
       type: "text"
     })
-    return res.status(201).json({ message: "Ticket created" });
+    return res.status(201).json({
+      message: "Ticket created",
+      ticket: {
+        ticketID: ticket.ticketID,
+        type: "text",
+        department: department, // dummy value (e.g., "loan")
+        transcript: data, // for text, the submitted text is the transcript
+      },
+    });
+
   } catch (error) {
     console.error(error);
     return res.status(500);
   }
 };
 
-module.exports= generateTextTicket;
+module.exports = generateTextTicket;
