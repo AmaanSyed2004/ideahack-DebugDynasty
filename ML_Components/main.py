@@ -7,9 +7,13 @@ from typing import Annotated
 from face_recognition_new import get_arcface_embedding, compare_face_and_embedding
 from speech_recognition import get_voice_embedding, compare_voice_and_embedding
 from final_query_categorisation import process_file_query, process_text_query
+import pickle
+
 
 app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
+
+
 
 @app.post("/get_face_embedding")
 async def upload_image(image: Annotated[UploadFile, File(...)]):
@@ -92,3 +96,39 @@ async def query_text_route(text: str = Form(...)):
     Accepts a text string and processes it directly with the model.
     """
     return process_text_query(text)
+
+
+
+recommendation_model = "loan_rf_model.pkl"
+with open(recommendation_model, "rb") as f:
+    recommendation_model_data = pickle.load(f)
+
+LOAN_MODEL = recommendation_model_data["model"]
+LOAN_CLASSES = recommendation_model_data["classes"]
+
+@app.post("/recommendation")
+async def recommendation(request: Request):
+    """
+    Accepts user input as JSON and returns the top 5 recommended loan types.
+    """
+    try:
+        # Get JSON data from request
+        data = await request.json()
+        
+        # Extract required fields (ensures only needed fields are used)
+        required_fields = ["age", "total_assets", "credit_score", "net_monthly_income", "missed_payments"]
+        features = np.array([data[field] for field in required_fields]).reshape(1, -1)
+
+        # Predict loan category probabilities
+        proba = LOAN_MODEL.predict_proba(features)[0]
+
+        # Sort and get the top 5 recommended loans
+        sorted_loans = sorted(zip(LOAN_CLASSES, proba), key=lambda x: x[1], reverse=True)
+        top_5_loans = [loan[0] for loan in sorted_loans[:5]]
+
+        return JSONResponse(content={"top_5_loans": top_5_loans})
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"Failed to generate recommendation: {str(e)}"}, status_code=400)
+
+    
