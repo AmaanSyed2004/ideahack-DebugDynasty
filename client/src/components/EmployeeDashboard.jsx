@@ -9,22 +9,22 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 function EmployeeDashboard() {
   const employeeName = "Employee Name";
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+    logout();
     navigate("/");
   };
 
