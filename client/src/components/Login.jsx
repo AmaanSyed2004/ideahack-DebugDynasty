@@ -281,7 +281,7 @@ function Login() {
                 ) : (
                   <button
                     onClick={handleRedo}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
+                    className="opacity-80 w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
                   >
                     ReCapture
                   </button>

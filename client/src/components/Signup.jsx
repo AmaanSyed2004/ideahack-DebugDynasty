@@ -388,7 +388,7 @@ function Signup() {
       }
       // Example: phone must have +countryCode, but for hackathon, we can do +91...
       const phoneWithCountry = "+91" + formData.mobile;
-      const res = await axios.post("http://localhost:5555/auth/send-otp", {
+      const res = await axios.post("http://localhost:5555/auth/otp/send-otp", {
         phoneNumber: phoneWithCountry,
       });
       if (res.data.success) {
@@ -410,7 +410,7 @@ function Signup() {
         return;
       }
       const phoneWithCountry = "+91" + formData.mobile;
-      const res = await axios.post("http://localhost:5555/auth/verify-otp", {
+      const res = await axios.post("http://localhost:5555/auth/otp/verify-otp", {
         phoneNumber: phoneWithCountry,
         code: otp,
       });
@@ -688,10 +688,11 @@ function Signup() {
                         />
                         <button
                           onClick={handleRedoPhoto}
-                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all opacity-80"
                         >
                           ReCapture
                         </button>
+
                       </div>
                     ) : isCapturing ? (
                       <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">

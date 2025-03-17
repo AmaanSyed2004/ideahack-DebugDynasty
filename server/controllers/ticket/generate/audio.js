@@ -26,7 +26,16 @@ const generateAudioTicket = async (req, res) => {
       content: filePath, 
       type: "audio"
     });
-    return res.status(201).json({ message: "Ticket created" });
+    return res.status(201).json({
+      message: "Ticket created",
+      ticket: {
+        ticketID: ticket.ticketID,
+        type: "<audio/video>",
+        department: department,
+        transcript: "Dummy transcript for " + "<audio/video>",
+      },
+    });
+    
   } catch (error) {
     console.error(error);
     return res.status(500);
