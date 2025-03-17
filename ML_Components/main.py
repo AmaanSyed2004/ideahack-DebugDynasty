@@ -124,9 +124,9 @@ async def recommendation(request: Request, user_input: dict):
 
         # Sort and get the top 5 recommended loans
         sorted_loans = sorted(zip(LOAN_CLASSES, proba), key=lambda x: x[1], reverse=True)
-        top_5_loans = [loan[0] for loan in sorted_loans[:5]]
+        top_3_loans = [loan[0] for loan in sorted_loans[:3]]
 
-        return JSONResponse(content={"top_5_loans": top_5_loans})
+        return JSONResponse(content={"top_3_loans": top_3_loans})
 
     except Exception as e:
         return JSONResponse(content={"error": f"Failed to generate recommendation: {str(e)}"}, status_code=400)
