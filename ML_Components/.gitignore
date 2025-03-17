@@ -2,8 +2,10 @@
 __pycache__
 *.pyc
 *.pyo
+*.pkl
 requirements.txt
 synthetic_customer_data.csv
 .env
+synthetic_loan_data.csv
 
 
