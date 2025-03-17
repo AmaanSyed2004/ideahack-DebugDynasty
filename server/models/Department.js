@@ -11,6 +11,10 @@ const Department = sequelize.define('Department',{
         type: DataTypes.STRING,
         allowNull: false,
         unique: true
+    },
+    roundRobinIndex:{
+        type: DataTypes.INTEGER,
+        defaultValue: 0
     }
 })
 

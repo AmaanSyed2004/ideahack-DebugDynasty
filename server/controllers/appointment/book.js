@@ -3,9 +3,7 @@ const Appointment = require("../../models/Appointment");
 const Worker = require("../../models/Worker");
 const Department = require("../../models/Department");
 const generateSlots = require("../../utils/generateSlots");
-
-let roundRobinIndex = 0;
-
+const User= require("../../models/User");
 const bookAppointment = async (req, res) => {
   const { slot, dep } = req.body;
   const customerID = req.user.id;
@@ -15,24 +13,23 @@ const bookAppointment = async (req, res) => {
       .json({ message: "Please provide customer ID and slot" });
   }
   if(!dep){
-    return res.status(400).json({message: "Department is required"});
-}
+    return res.status(400).json({ message: "Department is required" });
+  }
 
-  // Validate the provided slot string.
-  // generateSlots() returns only valid slots (with 2+ hours buffer, proper hours, etc.)
   const validSlots = generateSlots();
   if (!validSlots.includes(slot)) {
     return res.status(400).json({ message: "Invalid or expired time slot" });
   }
 
-  // Check if any appointments exist for the given slot.
-  // (Since slots are generated discretely, a simple equality check works here.)
   const department = await Department.findOne({
     where: { departmentName: dep },
   });
+  if (!department) {
+    return res.status(404).json({ message: "Department not found" });
+  }
+
   const appointments = await Appointment.findAll({
-    where: { timeSlot: slot },
-    departmentID: department.departmentID
+    where: { timeSlot: slot, departmentID: department.departmentID },
   });
 
   const busyWorkerIDs = appointments.map((app) => app.workerID);
@@ -41,6 +38,7 @@ const bookAppointment = async (req, res) => {
     where: {
       userID: { [Op.notIn]: busyWorkerIDs },
       status: { [Op.not]: "handling_live" },
+      departmentID: department.departmentID, // Assuming worker is tied to department
     },
   });
 
@@ -50,19 +48,26 @@ const bookAppointment = async (req, res) => {
       .json({ message: "No workers available for this slot" });
   }
 
-  // Use round-robin selection for available workers.
-  const worker = availableWorkers[roundRobinIndex % availableWorkers.length];
-  roundRobinIndex++;
+  // Calculate round robin index
+  const index = department.roundRobinIndex % availableWorkers.length;
+  const worker = availableWorkers[index];
 
-  // Create the appointment with the slot stored as a string.
+  // Increment and update the department's roundRobinIndex
+  department.roundRobinIndex = department.roundRobinIndex + 1;
+  await department.save();
+
   await Appointment.create({
     customerID,
     workerID: worker.userID,
     timeSlot: slot,
     departmentID: department.departmentID,
   });
-
-  res.json({ message: "Appointment booked", workerID: worker.userID });
+  const user= await User.findByPk(worker.userID);
+  return res.json({ message: "Appointment booked", worker:{
+    name: user.fullName,
+    department: department.departmentName,
+    timeSlot: slot
+  } });
 };
 
 module.exports = bookAppointment;
