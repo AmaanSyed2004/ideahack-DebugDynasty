@@ -8,15 +8,13 @@ from numpy.linalg import norm
 # IMPORTANT: The model file "shape_predictor_68_face_landmarks.dat" is NOT included in this repository.
 # Due to its large size (~99MB), it must be downloaded manually from the official dlib site:
 # Download Link: http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
-# 
+#
 # To download and extract the model, run the following commands in the terminal:
-# 
+#
 # wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 # bzip2 -d shape_predictor_68_face_landmarks.dat.bz2
-# 
+#
 # After downloading, ensure the .dat file is in the same directory as this script.
-
-# Load the face landmark predictor (Ensure the .dat file is present)
 
 def eye_aspect_ratio(eye):
     A = distance.euclidean(eye[1], eye[5])
@@ -28,11 +26,10 @@ def eye_aspect_ratio(eye):
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("/content/shape_predictor_68_face_landmarks.dat")
 
-# Eye landmark points
+# Eye landmark points (dlib indexes start at 0)
 (left_start, left_end) = (42, 48)
 (right_start, right_end) = (36, 42)
 
-# Liveness detection function
 def is_live_video(video_path, ear_threshold=0.25, min_blinks=3, frame_check=100):
     cap = cv2.VideoCapture(video_path)
     blink_count = 0
@@ -42,7 +39,7 @@ def is_live_video(video_path, ear_threshold=0.25, min_blinks=3, frame_check=100)
         ret, frame = cap.read()
         if not ret:
             break
-        
+
         total_frames += 1
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = detector(gray)
@@ -58,7 +55,7 @@ def is_live_video(video_path, ear_threshold=0.25, min_blinks=3, frame_check=100)
 
             if ear < ear_threshold:
                 blink_count += 1
-        
+
         if total_frames % frame_check == 0:
             cap.release()
             return blink_count >= min_blinks
@@ -94,7 +91,8 @@ def get_video_embedding_facenet(video_path, model_name="Facenet"):
             emb_list = DeepFace.represent(frame, model_name=model_name, enforce_detection=False)
             if emb_list and len(emb_list) > 0:
                 embeddings.append(np.array(emb_list[0]['embedding']))
-        except:
+        except Exception as e:
+            # Continue to next frame on error
             pass
 
     if len(embeddings) == 0:
@@ -110,27 +108,60 @@ def get_face_embedding(image_path, model_name="Facenet"):
 def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (norm(vec1) * norm(vec2))
 
-if __name__ == "__main__":
-    video_file = "/content/reference.mp4"
-    image_file = "/content/reference.jpeg"
+def run_face_verification(video_path: str, image_path: str) -> dict:
+    """
+    Processes the given video and image for liveness detection and facial recognition.
+    1. Performs liveness detection on the video.
+    2. If the video is real, extracts embeddings from both the video and the image.
+    3. Computes cosine similarity and returns a match decision.
+    
+    Args:
+        video_path: Path to the video file.
+        image_path: Path to the image file.
+    
+    Returns:
+        Dictionary containing the liveness result, cosine similarity (if applicable),
+        match result (if applicable), and appropriate messages.
+    """
+    result = {}
+    # Step 1: Liveness detection
+    live = is_live_video(video_path)
+    result["liveness"] = live
 
-    # Step 1: Perform Liveness Detection
-    if is_live_video(video_file):
-        print("Liveness Check Passed: Video is Real")
-        
-        # Step 2: Perform Facial Recognition
-        video_embedding = get_video_embedding_facenet(video_file, model_name="Facenet")
-        face_embedding = get_face_embedding(image_file, model_name="Facenet")
-        
+    if live:
+        result["liveness_message"] = "Liveness Check Passed: Video is Real"
+        # Step 2: Facial Recognition
+        video_embedding = get_video_embedding_facenet(video_path, model_name="Facenet")
+        face_embedding = get_face_embedding(image_path, model_name="Facenet")
+
         if video_embedding is None:
-            print("No embedding extracted for the video.")
+            result["message"] = "No embedding extracted for the video."
+            result["cosine_similarity"] = None
+            result["match"] = None
         elif face_embedding is None:
-            print("No embedding extracted for the image.")
+            result["message"] = "No embedding extracted for the image."
+            result["cosine_similarity"] = None
+            result["match"] = None
         else:
             similarity = cosine_similarity(video_embedding, face_embedding)
+            result["cosine_similarity"] = similarity
             if similarity > 0.5:
-                print("Result: Match")
+                result["match"] = True
+                result["message"] = "Result: Match"
             else:
-                print("Result: No Match")
+                result["match"] = False
+                result["message"] = "Result: No Match"
     else:
-        print("Liveness Check Failed: Spoof Detected!")
+        result["liveness_message"] = "Liveness Check Failed: Spoof Detected!"
+        result["cosine_similarity"] = None
+        result["match"] = None
+        result["message"] = "No further processing due to failed liveness check."
+
+    return result
+
+# ---------------- Example Usage ---------------- #
+if __name__ == "__main__":
+    video_file = "/content/varnika1.mp4"
+    image_file = "/content/reference.jpg"
+    output = run_face_verification(video_file, image_file)
+    print("Final Output:", output)
