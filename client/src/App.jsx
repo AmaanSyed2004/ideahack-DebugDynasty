@@ -7,7 +7,6 @@ import { AuthProvider } from "./context/AuthContext";
 import NavBar from "./components/NavBar";
 import HeroSection from "./components/HeroSection";
 import FeaturesSection from "./components/FeaturesSection";
-import AppointmentSection from "./components/Appointments";
 import FAQSection from "./components/FAQSection";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
@@ -22,13 +21,14 @@ import Appointments from "./components/Appointments";
 import EmployeeDashboard from "./components/EmployeeDashboard.JSX";
 import EmployeeLiveQueries from "./components/EmployeeLiveQueries";
 import EmployeeAppointments from "./components/EmployeeAppointments";
+import HomeAppointmentSection from "./components/HomeAppointmentSection";
 
 function LandingPage({ heroRef, featuresRef, appointmentRef, faqRef, scrollToSection }) {
   return (
     <>
       <HeroSection ref={heroRef} onDiscoverMore={() => scrollToSection(featuresRef)} />
       <FeaturesSection ref={featuresRef} />
-      <AppointmentSection ref={appointmentRef} />
+      <HomeAppointmentSection ref={appointmentRef} />
       <FAQSection ref={faqRef} />
     </>
   );

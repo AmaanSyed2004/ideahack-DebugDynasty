@@ -16,7 +16,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
           Advanced Features
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
-          {/* Feature 1 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
               <Calendar className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
@@ -29,7 +28,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
               credit history for faster resolution.
             </p>
           </div>
-          {/* Feature 2 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-green-50 p-4 rounded-2xl inline-block mb-6">
               <Users className="h-10 w-10 md:h-12 md:w-12 text-green-600" />
@@ -42,7 +40,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
               proactive solutions.
             </p>
           </div>
-          {/* Feature 3 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-red-50 p-4 rounded-2xl inline-block mb-6">
               <Shield className="h-10 w-10 md:h-12 md:w-12 text-red-600" />
@@ -55,7 +52,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
               fraud.
             </p>
           </div>
-          {/* Feature 4 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-purple-50 p-4 rounded-2xl inline-block mb-6">
               <PhoneCall className="h-10 w-10 md:h-12 md:w-12 text-purple-600" />
@@ -68,7 +64,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
               offline query storage.
             </p>
           </div>
-          {/* Feature 5 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-yellow-50 p-4 rounded-2xl inline-block mb-6">
               <Shield2 className="h-10 w-10 md:h-12 md:w-12 text-yellow-600" />
@@ -81,7 +76,6 @@ const FeaturesSection = React.forwardRef((props, ref) => {
               liveness detection.
             </p>
           </div>
-          {/* Feature 6 */}
           <div className="feature-card bg-white p-6 md:p-8 rounded-2xl shadow-lg">
             <div className="bg-indigo-50 p-4 rounded-2xl inline-block mb-6">
               <HelpCircle className="h-10 w-10 md:h-12 md:w-12 text-indigo-600" />

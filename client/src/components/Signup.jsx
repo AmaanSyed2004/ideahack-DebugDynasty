@@ -260,7 +260,7 @@ function Signup() {
       formDataToSend.append("role", "customer");
       formDataToSend.append("audio", audioFile);
 
-      const response = await fetch("http://localhost:5555/auth/register", {
+      const response = await fetch("http://localhost:5555/auth/customer/register", {
         method: "POST",
         body: formDataToSend,
       });

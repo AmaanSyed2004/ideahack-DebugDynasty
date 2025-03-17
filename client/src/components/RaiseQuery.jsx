@@ -1,6 +1,15 @@
+/* RaiseQuery.jsx */
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Mic, Video, MessageSquare, CheckCircle } from "lucide-react";
+import {
+  ArrowRight,
+  Mic,
+  Video,
+  MessageSquare,
+  CheckCircle,
+  Key
+} from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
 
 async function convertWebmToWav(blob) {
   const arrayBuffer = await blob.arrayBuffer();
@@ -79,13 +88,11 @@ const RaiseQuery = () => {
   const [ticketDetails, setTicketDetails] = useState(null);
   const [streamReady, setStreamReady] = useState(false);
 
-  // Audio recording state and refs
   const [recordingAudio, setRecordingAudio] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioURL, setAudioURL] = useState(null);
   const audioRecorderRef = useRef(null);
 
-  // Video recording state and refs
   const [recordingVideo, setRecordingVideo] = useState(false);
   const [videoBlob, setVideoBlob] = useState(null);
   const [videoURL, setVideoURL] = useState(null);
@@ -118,7 +125,6 @@ const RaiseQuery = () => {
     }
   };
 
-  // --- Audio Recording Functions ---
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -135,7 +141,7 @@ const RaiseQuery = () => {
       setRecordingAudio(true);
     } catch (error) {
       console.error("Error starting audio recording:", error);
-      alert("Failed to access microphone. Please check your permissions.");
+      toast.error("Failed to access microphone. Please check your permissions.");
     }
   };
 
@@ -151,7 +157,6 @@ const RaiseQuery = () => {
     setAudioURL(null);
   };
 
-  // --- Video Recording Functions ---
   const startVideoRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -189,7 +194,9 @@ const RaiseQuery = () => {
     } catch (error) {
       console.error("Error starting video recording:", error);
       cleanupVideoStream();
-      alert("Failed to start recording. Please make sure you have granted camera permissions.");
+      toast.error(
+        "Failed to start recording. Please make sure you have granted camera permissions."
+      );
     }
   };
 
@@ -210,14 +217,13 @@ const RaiseQuery = () => {
     cleanupVideoStream();
   };
 
-  // --- Submit Function ---
   const handleSubmit = async () => {
     if (!submissionType) return;
     let response;
     try {
       if (submissionType === "text") {
         if (!queryText.trim()) {
-          alert("Please enter your query text.");
+          toast.error("Please enter your query text.");
           return;
         }
         response = await fetch("http://localhost:5555/ticket/add/text", {
@@ -228,7 +234,7 @@ const RaiseQuery = () => {
         });
       } else if (submissionType === "audio") {
         if (!audioBlob) {
-          alert("Please record your audio query.");
+          toast.error("Please record your audio query.");
           return;
         }
         const wavBlob = await convertWebmToWav(audioBlob);
@@ -243,10 +249,9 @@ const RaiseQuery = () => {
         });
       } else if (submissionType === "video") {
         if (!videoBlob) {
-          alert("Please record your video query.");
+          toast.error("Please record your video query.");
           return;
         }
-        // Send video as .webm file
         const videoFile = new File([videoBlob], "video.webm", { type: "video/webm" });
         const formData = new FormData();
         formData.append("video", videoFile);
@@ -262,25 +267,24 @@ const RaiseQuery = () => {
         setTicketDetails(result.ticket);
         setShowSuccess(true);
       } else {
-        alert("Failed to create ticket: " + result.message);
+        toast.error("Failed to create ticket: " + result.message);
       }
     } catch (error) {
       console.error("Error submitting query:", error);
-      alert("An error occurred while submitting your query. Please try again.");
+      toast.error("An error occurred while submitting your query. Please try again.");
     }
   };
 
   const renderVideoRecording = () => (
     <div className="mt-8 text-center">
       {recordingVideo && !videoURL ? (
-        <div className="flex flex-col items-center space-y-2 w-full">
-          <div className="relative w-full h-64 bg-black rounded-xl overflow-hidden">
-            <video
-              ref={videoPreviewRef}
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
+        <div className="flex flex-col items-center space-y-4 w-full">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-red-600 rounded-full animate-ping"></div>
+            <span className="text-sm text-gray-600 font-semibold">
+              RECORDING HAS STARTED
+            </span>
+            <Video className="h-6 w-6 text-red-600" />
           </div>
           <button
             onClick={stopVideoRecording}
@@ -292,7 +296,7 @@ const RaiseQuery = () => {
       ) : videoURL ? (
         <div className="flex flex-col items-center space-y-2 w-full">
           <div className="w-full h-64 bg-black rounded-xl overflow-hidden">
-            <video src={videoURL} controls className="w-full h-full object-cover" />
+            <video src={videoURL} controls autoPlay className="w-full h-full object-cover" />
           </div>
           <button
             onClick={redoVideoRecording}
@@ -378,6 +382,7 @@ const RaiseQuery = () => {
 
   return (
     <div className="min-h-screen bg-blue-50">
+      <Toaster position="top-right" />
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="bg-white max-w-2xl mx-auto p-8 rounded-3xl shadow-xl">
           <h2 className="text-2xl md:text-3xl font-semibold text-blue-900 mb-6">
@@ -393,10 +398,18 @@ const RaiseQuery = () => {
               onClick={() => setSubmissionType("text")}
             >
               <div className="flex items-center space-x-4">
-                <MessageSquare className={`h-6 w-6 ${submissionType === "text" ? "text-white" : "text-blue-600"}`} />
+                <MessageSquare
+                  className={`h-6 w-6 ${
+                    submissionType === "text" ? "text-white" : "text-blue-600"
+                  }`}
+                />
                 <div className="flex flex-col">
                   <span className="text-lg md:text-xl font-semibold">Text Message</span>
-                  <span className={`text-sm md:text-base ${submissionType === "text" ? "text-gray-100" : "text-gray-600"}`}>
+                  <span
+                    className={`text-sm md:text-base ${
+                      submissionType === "text" ? "text-gray-100" : "text-gray-600"
+                    }`}
+                  >
                     Type your query in detail
                   </span>
                 </div>
@@ -412,10 +425,18 @@ const RaiseQuery = () => {
               onClick={() => setSubmissionType("audio")}
             >
               <div className="flex items-center space-x-4">
-                <Mic className={`h-6 w-6 ${submissionType === "audio" ? "text-white" : "text-blue-600"}`} />
+                <Mic
+                  className={`h-6 w-6 ${
+                    submissionType === "audio" ? "text-white" : "text-blue-600"
+                  }`}
+                />
                 <div className="flex flex-col">
                   <span className="text-lg md:text-xl font-semibold">Voice Message</span>
-                  <span className={`text-sm md:text-base ${submissionType === "audio" ? "text-gray-100" : "text-gray-600"}`}>
+                  <span
+                    className={`text-sm md:text-base ${
+                      submissionType === "audio" ? "text-gray-100" : "text-gray-600"
+                    }`}
+                  >
                     Record an audio message
                   </span>
                 </div>
@@ -431,10 +452,18 @@ const RaiseQuery = () => {
               onClick={() => setSubmissionType("video")}
             >
               <div className="flex items-center space-x-4">
-                <Video className={`h-6 w-6 ${submissionType === "video" ? "text-white" : "text-blue-600"}`} />
+                <Video
+                  className={`h-6 w-6 ${
+                    submissionType === "video" ? "text-white" : "text-blue-600"
+                  }`}
+                />
                 <div className="flex flex-col">
                   <span className="text-lg md:text-xl font-semibold">Video Call</span>
-                  <span className={`text-sm md:text-base ${submissionType === "video" ? "text-gray-100" : "text-gray-600"}`}>
+                  <span
+                    className={`text-sm md:text-base ${
+                      submissionType === "video" ? "text-gray-100" : "text-gray-600"
+                    }`}
+                  >
                     Start a video consultation
                   </span>
                 </div>
@@ -456,7 +485,7 @@ const RaiseQuery = () => {
           {submissionType === "audio" && (
             <div className="mt-8 text-center">
               {recordingAudio && !audioURL ? (
-                <div className="flex flex-col items-center space-y-4">
+                <div className="flex flex-col items-center space-y-4 w-full">
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 bg-red-600 rounded-full animate-ping"></div>
                     <span className="text-sm text-gray-600">Recording audio...</span>

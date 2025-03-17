@@ -6,7 +6,6 @@ import { Eye, EyeOff, User, Lock, Camera, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { toast, Toaster } from "react-hot-toast";
 
-// Helper: Convert dataURL to File
 const dataURLtoFile = (dataurl, filename) => {
   let arr = dataurl.split(",");
   let mime = arr[0].match(/:(.*?);/)[1];
@@ -19,7 +18,6 @@ const dataURLtoFile = (dataurl, filename) => {
   return new File([u8arr], filename, { type: mime });
 };
 
-// Reusable loading spinner overlay
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center">
     <Loader2 className="animate-spin text-blue-600" size={32} />
@@ -76,7 +74,6 @@ function Login() {
     setStep(2);
   };
 
-  // Start camera when on facial auth step (step 2)
   useEffect(() => {
     let stream;
     async function startCamera() {
@@ -165,7 +162,6 @@ function Login() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 relative">
       <Toaster position="top-right" />
-      {/* Top bar */}
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
         <button
@@ -183,7 +179,6 @@ function Login() {
           transition={{ duration: 0.5 }}
           className="mx-auto relative bg-white rounded-2xl shadow-2xl w-full max-w-[900px] px-8 pt-8 pb-4 max-h-[85vh] overflow-y-auto"
         >
-          {/* Loading overlay */}
           {loading && (
             <div className="absolute inset-0 bg-white opacity-75 flex items-center justify-center z-50">
               <LoadingSpinner />

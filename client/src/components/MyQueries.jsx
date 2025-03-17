@@ -25,7 +25,6 @@ const MyQueries = () => {
   }, []);
 
   useEffect(() => {
-    // Set dummy queries
     setQueries([
       {
         ticketNumber: "TCK12345",

@@ -26,14 +26,12 @@ function NavBar({
 
       <div className="container mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Brand Name */}
           <div className="transform hover:scale-105 transition-transform">
             <span className="text-2xl sm:text-3xl font-bold text-gradient">
               UBI भरोसा
             </span>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center">
             <div className="flex items-center space-x-6">
               <button
@@ -61,7 +59,6 @@ function NavBar({
                 FAQ
               </button>
             </div>
-            {/* Desktop Auth Buttons */}
             <div className="flex items-center space-x-2 ml-6">
               <Link
                 to="/login"
@@ -92,7 +89,6 @@ function NavBar({
             </div>
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={toggleMenu}
             className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
@@ -101,7 +97,6 @@ function NavBar({
           </button>
         </div>
 
-        {/* Mobile Menu */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
