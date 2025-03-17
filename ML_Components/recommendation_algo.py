@@ -101,7 +101,7 @@ def get_top_5_loans(row, model, classes):
     cats_probs.sort(key=lambda x: x[1], reverse=True)
     
     # Take the top 5 categories and return as a comma-separated string
-    top_5_cats = [cat for cat, prob in cats_probs[:5]]
+    top_5_cats = [cat for cat, prob in cats_probs[:3]]
     return ", ".join(top_5_cats)
 
 def run_loan_recommendation(input_row: dict) -> dict:
@@ -121,10 +121,10 @@ def run_loan_recommendation(input_row: dict) -> dict:
 if __name__ == "__main__":
     # Sample input row (replace with your own values)
     sample_row = {
-        "age": 30,
-        "total_assets": 100000,
-        "credit_score": 700,
-        "net_monthly_income": 5000,
+        "age": 19,
+        "total_assets": 200000,
+        "credit_score": 620,
+        "net_monthly_income": 25000,
         "missed_payments": 0
     }
     result = run_loan_recommendation(sample_row)
