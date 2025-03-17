@@ -1,41 +1,38 @@
 import os
+import re
+import string
+import whisper
+import pandas as pd
 from pydub import AudioSegment
 from moviepy.editor import VideoFileClip
-import speech_recognition as sr
-from gtts import gTTS
-from IPython.display import Audio
-import re
-import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
-import string
 
-# -------------- 🔹 Step 1: Audio/Video Transcription 🔹 -------------- #
-
-def extract_audio(input_path, output_audio_path="audio.wav"):
-    """Extracts audio from a video or converts an audio file to WAV (16kHz mono)."""
+# -------------- 🔹 Step 1: Audio/Video Transcription using Whisper 🔹 -------------- #
+def extract_audio(input_path, output_audio_path="converted_audio.wav"):
+    """Extracts audio from a video or converts an existing audio file to WAV (16kHz mono)."""
     file_ext = os.path.splitext(input_path)[-1].lower()
 
-    # Handle video files
+    # If the input is a video, extract audio
     if file_ext in [".mp4", ".avi", ".mov", ".mkv", ".flv"]:
         try:
             print("Detected video file. Extracting audio...")
             video = VideoFileClip(input_path)
             audio = video.audio
-            audio.write_audiofile(output_audio_path)
+            audio.write_audiofile(output_audio_path, logger=None)
             video.close()
+            input_path = output_audio_path  # Set the extracted audio as input for conversion
         except Exception as e:
             print("Error extracting audio:", e)
             return None
 
-    # Convert to 16kHz mono
+    # Process the audio file (or the extracted audio) to convert it to 16 kHz mono WAV format
     try:
-        print("Converting to 16 kHz mono for better recognition...")
-        audio = AudioSegment.from_file(output_audio_path)
+        print("Converting to 16 kHz mono for Whisper...")
+        audio = AudioSegment.from_file(input_path)
         audio = audio.set_frame_rate(16000).set_channels(1)
         converted_audio_path = "converted_audio.wav"
         audio.export(converted_audio_path, format="wav")
@@ -44,37 +41,29 @@ def extract_audio(input_path, output_audio_path="audio.wav"):
         print("Error processing audio:", e)
         return None
 
-def transcribe_audio(audio_path, language="en"):
-    """Transcribes extracted audio to text."""
-    recognizer = sr.Recognizer()
-    
-    with sr.AudioFile(audio_path) as source:
-        print("Analyzing audio...")
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        audio_data = recognizer.record(source)
-    
+def transcribe_audio_whisper(audio_path, model_size="base"):
+    """Transcribes audio using OpenAI's Whisper model."""
     try:
-        transcript = recognizer.recognize_google(audio_data, language=language)
-        return transcript
-    except sr.UnknownValueError:
-        print("Could not understand the audio.")
-        return None
-    except sr.RequestError as e:
-        print("Google Speech Recognition API error:", e)
+        print("Loading Whisper model...")
+        model = whisper.load_model(model_size)
+        print("Transcribing audio...")
+        result = model.transcribe(audio_path)
+        return result["text"]
+    except Exception as e:
+        print("Error during transcription:", e)
         return None
 
-def process_file(input_path, language="en"):
+def process_file(input_path):
     """Processes audio/video: Extracts, transcribes, and returns text."""
     audio_path = extract_audio(input_path)
-    
     if audio_path:
-        transcript = transcribe_audio(audio_path, language=language)
+        transcript = transcribe_audio_whisper(audio_path)
         if transcript:
-            print(f"Transcription ({language}):", transcript)
-            return transcript  # ✅ Return text for classification
+            print("Transcription:", transcript)
+            return transcript  # Return text for further processing
     return None
 
-# -------------- 🔹 Step 2: Text Classification Model 🔹 -------------- #
+# -------------- 🔹 Step 2: Train & Build Query Categorization Model 🔹 -------------- #
 
 # Function to preprocess text
 def preprocess_text(text):
@@ -84,7 +73,7 @@ def preprocess_text(text):
     text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
     return text
 
-# Training data for department classification (Replace with full dataset)
+# Define training queries for Loan Services (English, Hindi, Marathi, and mixed)
 loan_queries_en = [
     "What is the interest rate on home loans?",
     "How can I apply for a personal loan?",
@@ -159,7 +148,7 @@ loan_queries_mix = [
 
 loan_queries_all = loan_queries_en + loan_queries_hi + loan_queries_mr + loan_queries_mix
 
-# 2. Deposit & Account Services Department
+# Define training queries for Deposit & Account Services
 deposit_queries_en = [
     "What is the tenure of a fixed deposit?",
     "How much will be the maturity amount for my recurring deposit?",
@@ -234,7 +223,7 @@ deposit_queries_mix = [
 
 deposit_queries_all = deposit_queries_en + deposit_queries_hi + deposit_queries_mr + deposit_queries_mix
 
-# 3. Operations & Service Requests Department
+# Define training queries for Operations & Service Requests
 operations_queries_en = [
     "How to get a new cheque book issued?",
     "I need to transfer my account to another branch.",
@@ -309,7 +298,7 @@ operations_queries_mix = [
 
 operations_queries_all = operations_queries_en + operations_queries_hi + operations_queries_mr + operations_queries_mix
 
-# 4. Customer Grievance & Fraud Resolution Department
+# Define training queries for Customer Grievance & Fraud Resolution
 grievance_queries_en = [
     "I suspect fraudulent transactions in my account.",
     "There are unauthorized charges on my credit card.",
@@ -382,26 +371,9 @@ grievance_queries_mix = [
     "My Aadhaar linked है but verification failing, please assist!"
 ]
 
-grievance_queries_all = (grievance_queries_en + grievance_queries_hi +
-                         grievance_queries_mr + grievance_queries_mix)
+grievance_queries_all = grievance_queries_en + grievance_queries_hi + grievance_queries_mr + grievance_queries_mix
 
-# Edge Case Testing (generic across departments)
-edge_case_queries = [
-    "loan interest hightower ka rate?",
-    "i wanna knw abt fix deposit schemssss",
-    "Ek din ke liye loan mil sakta hai?",
-    "give me full details of every deposit option",
-    "bhai, bank fraud se kaise bache?",
-    "मुझे personal लोन लेना है, पर मैं नौकरी नहीं करता!",
-    "I got SMS saying transaction failed but money deducted?",
-    "Mujhe loan mil sakta hai bina kisi documents ke?",
-    "Sir, please help urgent issue with my money stuck!!!",
-    "Bank branch open time batao?"
-]
-
-# ---------------------------
-# Combine all training data with labels
-# ---------------------------
+# Combine training data with labels
 training_data = (
     [(q, "Loan Services Department") for q in loan_queries_all] +
     [(q, "Deposit & Account Services Department") for q in deposit_queries_all] +
@@ -409,30 +381,27 @@ training_data = (
     [(q, "Customer Grievance & Fraud Resolution Department") for q in grievance_queries_all]
 )
 
-
-# Convert training data to DataFrame
+# Create DataFrame and preprocess
 df = pd.DataFrame(training_data, columns=["Query", "Category"])
-
-# Preprocess queries
 df["Query"] = df["Query"].apply(preprocess_text)
 
 # Encode labels
 label_encoder = LabelEncoder()
 df["Category"] = label_encoder.fit_transform(df["Category"])
 
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(df["Query"], df["Category"], test_size=0.2, random_state=42, stratify=df["Category"])
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(df["Query"], df["Category"], 
+                                                    test_size=0.2, random_state=42, stratify=df["Category"])
 
-# Define text classification pipeline
+# Build Classification Pipeline
 pipeline = Pipeline([
     ("vectorizer", TfidfVectorizer()),
     ("classifier", MultinomialNB(alpha=0.1))
 ])
 
-# Train model
+# Train Model
 pipeline.fit(X_train, y_train)
 
-# Function to classify text queries
 def classify_query_ml(query):
     """Classifies a text query into a department."""
     query = preprocess_text(query)
@@ -440,16 +409,14 @@ def classify_query_ml(query):
     return label_encoder.inverse_transform([category_index])[0]
 
 # -------------- 🔹 Step 3: Integrate Transcription & Classification 🔹 -------------- #
-
-def handle_query(input_path, language="en"):
+def handle_query(input_path):
     """
-    End-to-end function to process audio/video query:
+    End-to-end function to process an audio/video query:
     1. Extract & transcribe speech.
-    2. Classify the text into a department.
-    3. Return the redirection result.
+    2. Classify the transcribed text into a department.
+    3. Return the department redirection result.
     """
-    transcribed_text = process_file(input_path, language=language)
-    
+    transcribed_text = process_file(input_path)
     if transcribed_text:
         department = classify_query_ml(transcribed_text)
         print(f"✅ Query Redirected To: {department}")
@@ -458,8 +425,9 @@ def handle_query(input_path, language="en"):
         print("❌ Could not process query.")
         return None
 
-# Example Usage
-file_path = "/content/test_4.wav"  # Replace with actual file
-redirected_department = handle_query(file_path, language="en")  # Change 'en' to 'hi' or 'mr' as needed
-
-print("Final Redirection:", redirected_department)
+# ---------------- Example Usage ---------------- #
+if __name__ == "__main__": # Corrected the variable name from _name_ to __name__
+    # Replace with your actual file path (audio/video file)
+    file_path = "/content/hindi_griev.mov"
+    redirected_department = handle_query(file_path)
+    print("Final Redirection:", redirected_department)
