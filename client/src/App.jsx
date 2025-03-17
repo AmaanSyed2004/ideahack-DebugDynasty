@@ -20,8 +20,8 @@ import InstantAppointment from "./components/InstantAppointment";
 import ScheduleAppointment from "./components/ScheduleAppointment";
 import Appointments from "./components/Appointments";
 import EmployeeDashboard from "./components/EmployeeDashboard";
-import EmplyeeAppointments from "./components/EmplyeeAppointments";
 import EmployeeLiveQueries from "./components/EmployeeLiveQueries";
+import EmployeeAppointments from "./components/EmployeeAppointments";
 
 /* LandingPage component renders the public homepage sections */
 function LandingPage({
@@ -149,7 +149,7 @@ function App() {
 
         <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
         <Route path="/employee/live-queries" element={<EmployeeLiveQueries />} />
-        <Route path="/employee/appointments" element={<EmplyeeAppointments />} />
+        <Route path="/employee/appointments" element={<EmployeeAppointments />} />
       </Routes>
     </Router>
   );
