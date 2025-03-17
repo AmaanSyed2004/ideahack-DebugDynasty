@@ -8,6 +8,7 @@ const authRouterWorker = require("./routes/auth/authWorker");
 const { authenticateJWT } = require("./middleware/authMiddleware");
 const verify = require("./controllers/auth/verify");
 const cookieParser = require("cookie-parser");
+const addTicketRouter = require("./routes/ticket/addTicket");
 
 const app = express();
 
@@ -23,6 +24,8 @@ app.use(express.json());
 app.use("/auth/customer", authRouterCustomer);
 app.use("/auth/worker", authRouterWorker);
 app.get("/auth/verify", authenticateJWT, verify);
+
+app.use("/ticket/add", addTicketRouter);
 sequelize
   .sync({ alter: true })
   .then(() => {

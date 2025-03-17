@@ -43,3 +43,4 @@ const ServiceTicket = sequelize.define('ServiceTicket',{
     //maybe left: fraud_risk
 })
 
+module.exports= ServiceTicket;
