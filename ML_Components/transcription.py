@@ -39,21 +39,17 @@ import whisper
 if os.name == "nt":
     AudioSegment.converter = os.environ["FFMPEG_BINARY"]
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def process_file(file_data: bytes, file_ext: str, model_size="base"):
     """
     Processes an uploaded audio/video file from raw bytes, converts it if necessary, and transcribes it.
-    
-    - file_data: Binary content of the file
-    - file_ext: File extension (e.g., '.wav', '.mp3', '.mp4')
-    - model_size: Whisper model size ("base", "small", etc.)
-
-    Returns:
-        Transcribed text (str) or None on failure.
+    The transcription task is set to "translate" so that any Hindi, Marathi, or other non-English input
+    is automatically translated to English.
     """
     try:
+        logging.debug(f"Starting file processing. File extension: {file_ext} | Data size: {len(file_data)} bytes")
         # Create a temporary file in the system temp directory
         temp_file_path = os.path.join(tempfile.gettempdir(), "temp_file" + file_ext)
         with open(temp_file_path, "wb") as temp_file:
@@ -62,26 +58,32 @@ def process_file(file_data: bytes, file_ext: str, model_size="base"):
         logging.info(f"Temporary file saved at: {temp_file_path}")
         # Convert and extract audio if needed
         temp_audio_path = convert_to_wav(temp_file_path)
-
         if not temp_audio_path:
             logging.error("Failed to convert/extract audio.")
             return None
 
         logging.info("Loading Whisper model...")
         model = whisper.load_model(model_size)
+        logging.info("Whisper model loaded successfully.")
 
-        logging.info("Transcribing audio...")
-        result = model.transcribe(temp_audio_path)
+        logging.info("Starting transcription with translation task (output will be in English)...")
+        # Use the "translate" task so that non-English speech is translated to English.
+        result = model.transcribe(temp_audio_path, task="translate")
+        detected_language = result.get("language", "unknown")
+        logging.info(f"Transcription completed. Detected language: {detected_language}")
+        logging.debug(f"Detected language: {detected_language}")
 
         # Cleanup temporary files
         os.remove(temp_file_path)
         os.remove(temp_audio_path)
 
+        logging.debug(f"Transcribed text (first 100 chars): {result.get('text', '')[:100]}...")
         return result["text"]
 
     except Exception as e:
-        logging.error(f"Error processing file: {e}")
+        logging.error(f"Error processing file: {e}", exc_info=True)
         return None
+
 
 def convert_to_wav(input_path):
     """
@@ -94,8 +96,9 @@ def convert_to_wav(input_path):
         audio = AudioSegment.from_file(input_path)
         audio = audio.set_frame_rate(16000).set_channels(1)
         audio.export(temp_wav_path, format="wav")
+        logging.info(f"Conversion successful. WAV file at: {temp_wav_path}")
         return temp_wav_path
 
     except Exception as e:
-        logging.error(f"Error converting audio: {e}")
+        logging.error(f"Error converting audio: {e}", exc_info=True)
         return None

@@ -8,4 +8,5 @@ synthetic_customer_data.csv
 .env
 synthetic_loan_data.csv
 
+query_classifier.pkl
 

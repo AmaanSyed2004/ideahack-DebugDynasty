@@ -1,4 +1,3 @@
-// text.js
 const Department = require("../../../models/Department");
 const ServiceTicket = require("../../../models/ServiceTicket");
 const TicketData = require("../../../models/TicketData");
@@ -15,8 +14,11 @@ const generateTextTicket = async (req, res) => {
     params.append("text", data);
     const fastApiResponse = await axios.post("http://localhost:8000/query/text", params);
     const { transcribed_text, department } = fastApiResponse.data;
-    
-    // Map the expanded ML department name to the short database name
+
+    // Capture the original ML department string
+    const originalDept = department;
+
+    // Map the expanded ML department name to the short database name for lookup
     const departmentMapping = {
       "Loan Services Department": "loan",
       "Deposit & Account Services Department": "deposit",
@@ -27,33 +29,34 @@ const generateTextTicket = async (req, res) => {
 
     const sentiment = 0.5; // Dummy value
     const priority = 0.5;  // Dummy value
-    
-    // Lookup department using the mapped name
+
+    // Lookup department using the mapped (short) name
     const dep = await Department.findOne({ where: { departmentName: mappedDept } });
     if (!dep) {
       return res.status(400).json({ message: `Department "${mappedDept}" not found in DB.` });
     }
-    
+
     const ticket = await ServiceTicket.create({
       userID: req.user.id,
       departmentID: dep.departmentID,
       priority,
       sentiment,
     });
-    
+
     await TicketData.create({
       ticketID: ticket.ticketID,
       content: data,
       type: "text",
       transcription: transcribed_text,
     });
-    
+
+    // Return the full ML department string in the response
     return res.status(201).json({
       message: "Ticket created",
       ticket: {
         ticketID: ticket.ticketID,
         type: "text",
-        department: mappedDept,
+        department: originalDept,  // full ML output is returned
         transcript: transcribed_text,
       },
     });
