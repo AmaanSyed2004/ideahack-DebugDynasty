@@ -19,14 +19,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import InstantAppointment from "./components/InstantAppointment";
 import ScheduleAppointment from "./components/ScheduleAppointment";
 import Appointments from "./components/Appointments";
-<<<<<<< HEAD
-import EmployeeDashboard from "./components/EmployeeDashboard";
+import EmployeeDashboard from "./components/EmployeeDashboard.JSX";
 import EmployeeLiveQueries from "./components/EmployeeLiveQueries";
 import EmployeeAppointments from "./components/EmployeeAppointments";
 
-=======
-import EmployeeDashboard from "./components/EmployeeDashboard.JSX";
->>>>>>> 315bfc6 (minor changes)
 /* LandingPage component renders the public homepage sections */
 function LandingPage({
   heroRef,
