@@ -37,7 +37,7 @@ def get_arcface_embedding(image_path, enforce_detection=True):
         print(f"Error processing {image_path}: {e}")
         return None
 
-def compare_images(image_path1, image_path2, threshold=0.7):
+def compare_images(image_path1, image_path2, threshold=0.5):
     """
     Compare two images using their ArcFace embeddings with cosine similarity.
     
@@ -67,7 +67,7 @@ def compare_images(image_path1, image_path2, threshold=0.7):
 
 if __name__ == "__main__":
     # Hard-code your paths here instead of using input().
-    image_path1 = "/content/reference.jpg"    # Replace with your actual path
-    image_path2 = "/content/varnika1.jpeg"    # Replace with your actual path
+    image_path1 = "./reference.jpg"    # Replace with your actual path
+    image_path2 = "./varnika1.jpeg"    # Replace with your actual path
 
     compare_images(image_path1, image_path2)
