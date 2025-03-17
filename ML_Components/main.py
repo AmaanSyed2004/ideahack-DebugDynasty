@@ -1,7 +1,7 @@
 import logging
 import json
 import numpy as np
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile,Request, Form
 from fastapi.responses import JSONResponse
 from typing import Annotated
 from face_recognition_new import get_arcface_embedding, compare_face_and_embedding
@@ -107,7 +107,7 @@ LOAN_MODEL = recommendation_model_data["model"]
 LOAN_CLASSES = recommendation_model_data["classes"]
 
 @app.post("/recommendation")
-async def recommendation(request: Request):
+async def recommendation(request: Request, user_input: dict):
     """
     Accepts user input as JSON and returns the top 5 recommended loan types.
     """
