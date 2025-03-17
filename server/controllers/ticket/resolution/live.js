@@ -33,9 +33,14 @@ const allotLive = async(req,res)=>{
     }
     ticket.resolution_mode = 'live';
     await ticket.save();
+    const nextTickets = await ServiceTicket.findAll({
+        where: { status: 'pending', resolution_mode: 'live' },
+        order: [['priority_score', 'DESC'], ['createdAt', 'DESC']] // Optional: older ticket first if tie
+    });
+    const numberOfTickets = nextTickets.length+1;
     return res.status(200).json({
         message: 'Ticket allotted successfully',
-        wait_time: '5 minutes'
+        wait_time: `${numberOfTickets*5} minutes`
     })
 }
 module.exports = allotLive;

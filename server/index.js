@@ -12,6 +12,7 @@ const addTicketRouter = require("./routes/ticket/addTicket");
 const otpRouter = require("./routes/otp/otpRoutes");
 const resolutionRouter = require("./routes/ticket/resolution");
 const queueRouter = require("./routes/ticket/queue");
+const appointmentRouter = require("./routes/appointment/appointmentRouter");
 const app = express();
 
 app.use(
@@ -32,6 +33,8 @@ app.use("/auth/otp", otpRouter);
 app.use("/ticket/add", addTicketRouter);
 app.use('/ticket/resolve', resolutionRouter);
 app.use("/ticket/queue", queueRouter);
+
+app.use("/appointment", appointmentRouter)
 sequelize
   .sync({ alter: true })
   .then(() => {
