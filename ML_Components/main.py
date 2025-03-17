@@ -7,8 +7,9 @@ from typing import Annotated
 from face_recognition_new import get_arcface_embedding, compare_face_and_embedding
 from speech_recognition import get_voice_embedding, compare_voice_and_embedding
 from final_query_categorisation import process_file_query, process_text_query
+# from customer_priority import CustomerPriorityScorer
 import pickle
-
+# import dill
 
 app = FastAPI()
 logging.basicConfig(level=logging.DEBUG)
@@ -130,5 +131,45 @@ async def recommendation(request: Request, user_input: dict):
 
     except Exception as e:
         return JSONResponse(content={"error": f"Failed to generate recommendation: {str(e)}"}, status_code=400)
+    
+# Priority_Scoring_Model = "customer_priority_model.pkl"
+# with open("customer_priority_model.pkl", "wb") as f:
+#     dill.dump(scorer, f)
+
+# Priority_MODEL = priority_scoring_model_data["model"]
+# Priority_CLASSES = priority_scoring_model_data["classes"]
+
+
+# @app.post("/prioritization")
+# async def prioritization(request: Request, user_input: dict):
+#     try:
+#         if Priority_MODEL is None:
+#             return JSONResponse(content={"error": "Model not loaded"}, status_code=500)
+
+#         # Get JSON data from request
+#         data = await request.json()
+
+#         # Required fields
+#         required_fields = [
+#             'Credit Score', 'Total Assets', 'Net Monthly Income',
+#             'Monthly Transactions', 'High-Value Transactions',
+#             'Sentiment Score', 'Missed Payments', 'Fraud Risk'
+#         ]
+
+#         # Validate input
+#         if not all(field in data for field in required_fields):
+#             return JSONResponse(content={"error": "Missing required fields"}, status_code=400)
+
+#         # Convert input to NumPy array
+#         features = np.array([data[field] for field in required_fields]).reshape(1, -1)
+
+#         # Predict priority score (assuming the model outputs a single score)
+#         score = Priority_MODEL.predict(features)[0]  # Ensure model is a regressor
+
+#         return JSONResponse(content={"priority_score": float(score)})
+
+#     except Exception as e:
+#         return JSONResponse(content={"error": f"Failed to generate priority score: {str(e)}"}, status_code=400)
+
 
     
