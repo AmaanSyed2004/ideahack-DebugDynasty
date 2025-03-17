@@ -1,4 +1,3 @@
-// RaiseQuery.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -7,7 +6,8 @@ import {
   Video,
   MessageSquare,
   CheckCircle,
-  Key
+  Key,
+  Loader2
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -86,8 +86,11 @@ const RaiseQuery = () => {
   const [queryText, setQueryText] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [ticketDetails, setTicketDetails] = useState(null);
-  const [streamReady, setStreamReady] = useState(false);
-
+  // New state for live allotment flow:
+  const [allotLoading, setAllotLoading] = useState(false);
+  const [waitTime, setWaitTime] = useState(null);
+  const [allotCompleted, setAllotCompleted] = useState(false);
+  
   // Audio recording state and refs
   const [recordingAudio, setRecordingAudio] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -120,7 +123,6 @@ const RaiseQuery = () => {
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = null;
       }
-      setStreamReady(false);
       setRecordingVideo(false);
     } catch (error) {
       console.error("Error cleaning up video stream:", error);
@@ -194,7 +196,6 @@ const RaiseQuery = () => {
 
       videoRecorderRef.current.start();
       setRecordingVideo(true);
-      setStreamReady(true);
     } catch (error) {
       console.error("Error starting video recording:", error);
       cleanupVideoStream();
@@ -211,7 +212,6 @@ const RaiseQuery = () => {
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = null;
       }
-      setStreamReady(false);
     }
   };
 
@@ -280,6 +280,33 @@ const RaiseQuery = () => {
     }
   };
 
+  // Function to handle the next step from summary page:
+  const handleNextAfterSummary = async () => {
+    if (!ticketDetails?.ticketID) return;
+    setAllotLoading(true);
+    try {
+      const response = await fetch("http://localhost:5555/ticket/resolve/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ticketID: ticketDetails.ticketID }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        // Use the fetched estimated wait time from the response
+        setWaitTime(result.wait_time);
+        setAllotCompleted(true);
+      } else {
+        toast.error("Failed to allot ticket: " + result.message);
+      }
+    } catch (error) {
+      console.error("Error allotting ticket:", error);
+      toast.error("An error occurred while allotting your ticket. Please try again.");
+    } finally {
+      setAllotLoading(false);
+    }
+  };
+
   const renderVideoRecording = () => (
     <div className="mt-8 text-center">
       {recordingVideo && !videoURL ? (
@@ -326,6 +353,51 @@ const RaiseQuery = () => {
     </div>
   );
 
+  // Final screen once the ticket is allotted
+  const renderAllotmentSuccess = () => (
+    <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center">
+      <div className="bg-white max-w-2xl mx-auto p-8 rounded-3xl shadow-xl text-center">
+        <div className="inline-block p-3 bg-green-100 rounded-full mb-4">
+          <CheckCircle className="h-12 w-12 text-green-500" />
+        </div>
+        <h2 className="text-3xl font-bold text-blue-900 mb-2">
+          Ticket Allotted!
+        </h2>
+        <p className="text-gray-600 text-lg mb-4">
+          Estimated wait time: {waitTime}
+        </p>
+        <p className="text-gray-700 text-lg">
+          Your ticket number is: {ticketDetails.ticketID}
+        </p>
+        <div className="mt-6">
+          <Link
+            to="/my-queries"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            View All Queries
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (allotLoading) {
+    return (
+      <div className="min-h-screen bg-blue-50 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="animate-spin text-blue-600" size={48} />
+          <p className="text-xl text-blue-700">Allotting your ticket...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (allotCompleted) {
+    return renderAllotmentSuccess();
+  }
+
+  // When showSuccess is true, we display the summary page with a Next button to trigger allotment.
   if (showSuccess) {
     return (
       <div className="min-h-screen bg-blue-50">
@@ -348,7 +420,9 @@ const RaiseQuery = () => {
               </h3>
               <div className="space-y-3">
                 <p className="text-gray-700">
-                  <strong>Submission Type:</strong> {ticketDetails?.type}
+                  <strong>Submission Type:</strong>{" "}
+                  {ticketDetails?.type.charAt(0).toUpperCase() +
+                    ticketDetails?.type.slice(1)}
                 </p>
                 <p className="text-gray-700">
                   <strong>Department Allotted:</strong> {ticketDetails?.department}
@@ -358,28 +432,14 @@ const RaiseQuery = () => {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="mt-8">
               <button
-                onClick={() => navigate("/appointment/instant")}
-                className="flex items-center justify-center space-x-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-xl hover:shadow-md transition-all"
+                onClick={handleNextAfterSummary}
+                className="w-full group flex items-center justify-center bg-gradient-to-r from-blue-600 to-red-600 text-white py-4 px-8 rounded-full text-lg font-medium transition-all transform hover:scale-102 hover:shadow-xl"
               >
-                Book Instant Appointment
+                Next →
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
               </button>
-              <button
-                onClick={() => navigate("/appointment/schedule")}
-                className="flex items-center justify-center space-x-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-xl hover:shadow-md transition-all"
-              >
-                Book Future Appointment
-              </button>
-            </div>
-            <div className="mt-6 text-center">
-              <Link
-                to="/my-queries"
-                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                View All Queries
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
             </div>
           </div>
         </div>
