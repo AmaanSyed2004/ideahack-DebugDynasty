@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Video, MessageSquare, CheckCircle, Clock } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const EmployeeAppointments = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
+    logout();
     navigate("/");
   };
 

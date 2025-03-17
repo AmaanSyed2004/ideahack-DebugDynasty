@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 
 // Helper to convert an uploaded file to a data URL
 function convertFileToDataUrl(file) {
@@ -14,24 +15,23 @@ function convertFileToDataUrl(file) {
 
 // Helper to convert dataURL to File (with a .jpg extension)
 const dataURLtoFile = (dataurl, filename) => {
-  let arr = dataurl.split(',');
+  let arr = dataurl.split(",");
   let mime = arr[0].match(/:(.*?);/)[1];
   let bstr = atob(arr[1]);
   let n = bstr.length;
   let u8arr = new Uint8Array(n);
-  while(n--){
+  while (n--) {
     u8arr[n] = bstr.charCodeAt(n);
   }
   return new File([u8arr], filename, { type: mime });
 };
 
-// ***** New Audio Conversion Functions *****
 async function convertWebmToWav(blob) {
   const arrayBuffer = await blob.arrayBuffer();
   const audioContext = new (window.AudioContext || window.webkitAudioContext)();
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
   const wavDataView = audioBufferToWav(audioBuffer);
-  return new Blob([wavDataView.buffer], { type: 'audio/wav' });
+  return new Blob([wavDataView.buffer], { type: "audio/wav" });
 }
 
 function audioBufferToWav(buffer, opt) {
@@ -40,7 +40,6 @@ function audioBufferToWav(buffer, opt) {
   var sampleRate = buffer.sampleRate;
   var format = opt.float32 ? 3 : 1;
   var bitDepth = format === 3 ? 32 : 16;
-
   var result;
   if (numChannels === 2) {
     result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
@@ -52,28 +51,25 @@ function audioBufferToWav(buffer, opt) {
   var totalLength = headerLength + bufferLength;
   var arrayBuffer = new ArrayBuffer(totalLength);
   var view = new DataView(arrayBuffer);
-
   function writeString(view, offset, string) {
     for (var i = 0; i < string.length; i++) {
       view.setUint8(offset + i, string.charCodeAt(i));
     }
   }
-
-  writeString(view, 0, 'RIFF');
+  writeString(view, 0, "RIFF");
   view.setUint32(4, 36 + bufferLength, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
   view.setUint32(16, 16, true);
   view.setUint16(20, format, true);
   view.setUint16(22, numChannels, true);
   view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * numChannels * bitDepth / 8, true);
-  view.setUint16(32, numChannels * bitDepth / 8, true);
+  view.setUint32(28, (sampleRate * numChannels * bitDepth) / 8, true);
+  view.setUint16(32, (numChannels * bitDepth) / 8, true);
   view.setUint16(34, bitDepth, true);
-  writeString(view, 36, 'data');
+  writeString(view, 36, "data");
   view.setUint32(40, bufferLength, true);
-
-  if (format === 1) { // PCM
+  if (format === 1) {
     let offset = 44;
     for (let i = 0; i < result.length; i++, offset += 2) {
       let s = Math.max(-1, Math.min(1, result[i]));
@@ -95,59 +91,62 @@ function interleave(inputL, inputR) {
   }
   return result;
 }
-// ***** End Audio Conversion Functions *****
 
 function Signup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    fullNameAadhaar: '',
-    mobile: '',
-    email: '',
-    password: '',
-    aadhaarNumber: '',
-    panNumber: '',
-    passportPhoto: null,   // uploaded file
-    capturedPhoto: null,   // live capture (data URL)
+    fullNameAadhaar: "",
+    mobile: "",
+    email: "",
+    password: "",
+    aadhaarNumber: "",
+    panNumber: "",
+    passportPhoto: null,
+    capturedPhoto: null,
     audioRecording: null,
   });
   const [errors, setErrors] = useState({});
-  const randomPhrase = "Please say 'My voice is my password. Verify me. The quick brown fox jumps over the lazy dog'";
+  const randomPhrase =
+    "Please say 'My voice is my password. Verify me. The quick brown fox jumps over the lazy dog'";
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
-  const [audioBlob, setAudioBlob] = useState(null); // Store the raw audio blob
+  const [audioBlob, setAudioBlob] = useState(null);
   const mediaRecorderRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const fileInputRef = useRef(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
-      case 'fullNameAadhaar':
+      case "fullNameAadhaar":
         if (!value.trim()) error = "Full Name is required.";
         break;
-      case 'mobile':
+      case "mobile":
         if (!value.trim()) error = "Mobile Number is required.";
         else if (!/^\d{10}$/.test(value.trim()))
           error = "Enter a valid 10-digit mobile number.";
         break;
-      case 'email':
+      case "email":
         if (value.trim() && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value.trim()))
           error = "Enter a valid email address.";
         break;
-      case 'password':
+      case "password":
         if (!value.trim()) error = "Password is required.";
-        else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(value.trim()))
-          error = "Password must be at least 6 characters and include one uppercase letter, one lowercase letter, one number, and one symbol.";
+        else if (
+          !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(value.trim())
+        )
+          error = "Password must be at least 6 characters and include uppercase, lowercase, a number, and a symbol.";
         break;
-      case 'aadhaarNumber':
+      case "aadhaarNumber":
         if (!value.trim()) error = "Aadhaar Number is required.";
         else if (!/^\d{12}$/.test(value.trim()))
           error = "Aadhaar must be 12 digits.";
         break;
-      case 'panNumber':
+      case "panNumber":
         if (!value.trim()) error = "PAN Number is required.";
         else if (!/^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(value.trim()))
           error = "Enter a valid PAN number (e.g., ABCDE1234F).";
@@ -155,7 +154,7 @@ function Signup() {
       default:
         break;
     }
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
@@ -163,12 +162,12 @@ function Signup() {
     const { name, value, files } = e.target;
     if (files) {
       if (name === "passportPhoto") {
-        setFormData(prev => ({ ...prev, passportPhoto: files[0], capturedPhoto: null }));
+        setFormData((prev) => ({ ...prev, passportPhoto: files[0], capturedPhoto: null }));
       } else {
-        setFormData(prev => ({ ...prev, [name]: files[0] }));
+        setFormData((prev) => ({ ...prev, [name]: files[0] }));
       }
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -179,33 +178,35 @@ function Signup() {
 
   const handleNext = async () => {
     if (step === 1) {
-      const err1 = validateField('fullNameAadhaar', formData.fullNameAadhaar);
-      const err2 = validateField('mobile', formData.mobile);
-      const err3 = validateField('email', formData.email);
-      const err4 = validateField('password', formData.password);
+      const err1 = validateField("fullNameAadhaar", formData.fullNameAadhaar);
+      const err2 = validateField("mobile", formData.mobile);
+      const err3 = validateField("email", formData.email);
+      const err4 = validateField("password", formData.password);
       if (err1 || err2 || err3 || err4) return;
     }
     if (step === 2) {
-      const err1 = validateField('aadhaarNumber', formData.aadhaarNumber);
-      const err2 = validateField('panNumber', formData.panNumber);
+      const err1 = validateField("aadhaarNumber", formData.aadhaarNumber);
+      const err2 = validateField("panNumber", formData.panNumber);
       if (err1 || err2) return;
     }
     if (step === 3) {
       if (!formData.passportPhoto && !formData.capturedPhoto) {
-        setErrors(prev => ({ ...prev, passportPhoto: "Please provide a passport photo or capture one." }));
+        setErrors((prev) => ({
+          ...prev,
+          passportPhoto: "Please provide a passport photo or capture one.",
+        }));
         return;
       }
       if (!audioURL) {
-        setErrors(prev => ({ ...prev, audioRecording: "Please record audio as instructed." }));
+        setErrors((prev) => ({ ...prev, audioRecording: "Please record audio as instructed." }));
         return;
       }
-      setFormData(prev => ({ ...prev, audioRecording: audioURL }));
+      setFormData((prev) => ({ ...prev, audioRecording: audioURL }));
     }
     setStep(step + 1);
   };
 
   const handlePrev = () => setStep(step - 1);
-
   const handleVerify = async () => {
     handleNext();
   };
@@ -227,7 +228,6 @@ function Signup() {
         alert("Please record audio as instructed.");
         return;
       }
-      // Convert the recorded audio from webm to wav
       const wavBlob = await convertWebmToWav(audioBlob);
       const audioFile = new File([wavBlob], "audio.wav", { type: "audio/wav" });
       
@@ -237,13 +237,12 @@ function Signup() {
       formDataToSend.append("password", formData.password);
       formDataToSend.append("phoneNumber", formData.mobile);
       formDataToSend.append("face_img", photoFile);
-      formDataToSend.append("role", 'customer');
-      formDataToSend.append("audio", audioFile);  // Append the converted WAV file
+      formDataToSend.append("role", "customer");
+      formDataToSend.append("audio", audioFile);
 
-      console.log("Sending signup request with face and audio files:", photoFile, audioFile);
       const response = await fetch("http://localhost:5555/auth/register", {
         method: "POST",
-        body: formDataToSend
+        body: formDataToSend,
       });
       const result = await response.json();
       if (!response.ok) {
@@ -251,16 +250,15 @@ function Signup() {
         alert("Signup failed: " + result.message);
         return;
       }
-      console.log("Signup successful:", result);
       alert("Signup successful! Please login.");
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
       console.error("Error during signup:", error);
       alert("An error occurred during signup. Check console for details.");
     }
   };
 
-  // Audio Recording Functions
+  // Audio recording functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -270,12 +268,11 @@ function Signup() {
         chunks.push(e.data);
       };
       mediaRecorderRef.current.onstop = () => {
-        const recordedBlob = new Blob(chunks, { type: 'audio/webm' });
+        const recordedBlob = new Blob(chunks, { type: "audio/webm" });
         const url = URL.createObjectURL(recordedBlob);
-        console.log("Audio recorded, URL:", url);
         setAudioURL(url);
-        setAudioBlob(recordedBlob); // Store the raw webm blob
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        setAudioBlob(recordedBlob);
+        mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
       };
       mediaRecorderRef.current.start();
       setRecording(true);
@@ -314,7 +311,7 @@ function Signup() {
     }
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [isCapturing, formData.capturedPhoto]);
@@ -325,43 +322,43 @@ function Signup() {
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      setFormData(prev => ({ ...prev, capturedPhoto: dataUrl }));
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      setFormData((prev) => ({ ...prev, capturedPhoto: dataUrl }));
       setIsCapturing(false);
       if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject.getTracks().forEach((track) => track.stop());
       }
     }
   };
 
   const handleRedoPhoto = () => {
-    setFormData(prev => ({ ...prev, capturedPhoto: null }));
+    setFormData((prev) => ({ ...prev, capturedPhoto: null }));
     setIsCapturing(true);
   };
 
   const handleRemoveUploadedPhoto = () => {
-    setFormData(prev => ({ ...prev, passportPhoto: null }));
+    setFormData((prev) => ({ ...prev, passportPhoto: null }));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 font-roboto">
+    <div className="min-h-screen w-full flex flex-col bg-blue-50 font-roboto">
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
-        <button onClick={() => navigate('/')} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
+        <button onClick={() => navigate("/")} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
           Back to Home
         </button>
       </div>
-      <div className="flex-1 relative top-[-25px] flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-[85vh] overflow-y-auto"
+          className="relative bg-blue-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] px-12 pt-8 pb-4 max-h-screen overflow-y-auto"
         >
           <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Sign Up</h1>
           {step === 1 && (
@@ -369,7 +366,7 @@ function Signup() {
               <h2 className="text-2xl font-semibold mb-4">Step 1: User Details Input</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">Full Name (as per Aadhaar/PAN)</label>
+                  <label className="block font-medium text-lg">Full Name (as per Aadhaar/PAN)</label>
                   <input
                     type="text"
                     name="fullNameAadhaar"
@@ -381,7 +378,7 @@ function Signup() {
                   {errors.fullNameAadhaar && <p className="text-red-500 text-sm mt-1">{errors.fullNameAadhaar}</p>}
                 </div>
                 <div>
-                  <label className="block font-medium">Mobile Number</label>
+                  <label className="block font-medium text-lg">Mobile Number</label>
                   <input
                     type="tel"
                     name="mobile"
@@ -393,7 +390,7 @@ function Signup() {
                   {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
                 </div>
                 <div>
-                  <label className="block font-medium">Email Address (optional)</label>
+                  <label className="block font-medium text-lg">Email Address (optional)</label>
                   <input
                     type="email"
                     name="email"
@@ -404,16 +401,23 @@ function Signup() {
                   />
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
-                <div>
-                  <label className="block font-medium">Set Password</label>
+                <div className="relative">
+                  <label className="block font-medium text-lg">Set Password</label>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 pr-12 border border-gray-300 rounded-md"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
               </div>
@@ -429,7 +433,7 @@ function Signup() {
               <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar & PAN Verification</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">Enter Aadhaar Number</label>
+                  <label className="block font-medium text-lg">Enter Aadhaar Number</label>
                   <input
                     type="text"
                     name="aadhaarNumber"
@@ -441,7 +445,7 @@ function Signup() {
                   {errors.aadhaarNumber && <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>}
                 </div>
                 <div>
-                  <label className="block font-medium">Enter PAN Number</label>
+                  <label className="block font-medium text-lg">Enter PAN Number</label>
                   <input
                     type="text"
                     name="panNumber"
@@ -467,7 +471,6 @@ function Signup() {
             <div>
               <h2 className="text-2xl font-semibold mb-4">Step 3: Identity Authentication (Facial & Audio)</h2>
               <div className="space-y-6">
-                {/* Photo Section */}
                 <div>
                   <label className="block font-medium mb-2">Passport Photo or Live Photo</label>
                   <div className="flex flex-col items-center space-y-4">
@@ -509,12 +512,7 @@ function Signup() {
                       </div>
                     ) : isCapturing ? (
                       <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
-                        <video
-                          ref={videoRef}
-                          autoPlay
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
+                        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                         <canvas ref={canvasRef} className="hidden" />
                         <button
                           onClick={handleCapturePhoto}
@@ -537,7 +535,6 @@ function Signup() {
                     Ensure your face is clearly visible, in a well-lit environment, and you are looking straight into the camera.
                   </p>
                 </div>
-                {/* Audio Section */}
                 <div>
                   <label className="block font-medium mb-2">Record Audio (Say the pre-decided phrase)</label>
                   <div className="flex flex-col items-center space-y-3">
@@ -563,9 +560,7 @@ function Signup() {
                   </div>
                   <div className="mt-1">
                     <p className="text-sm text-gray-600">Random Phrase: {randomPhrase}</p>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Please record in a quiet environment and speak clearly.
-                    </p>
+                    <p className="text-sm text-gray-600 mt-2">Please record in a quiet environment and speak clearly.</p>
                   </div>
                 </div>
               </div>
@@ -593,7 +588,7 @@ function Signup() {
                 </div>
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Email:</span>
-                  <span>{formData.email || 'Not Provided'}</span>
+                  <span>{formData.email || "Not Provided"}</span>
                 </div>
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Aadhaar Number:</span>
@@ -606,16 +601,12 @@ function Signup() {
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Photo:</span>
                   <span>
-                    {formData.passportPhoto
-                      ? formData.passportPhoto.name
-                      : formData.capturedPhoto
-                      ? 'Captured Photo'
-                      : 'Not Provided'}
+                    {formData.passportPhoto ? formData.passportPhoto.name : formData.capturedPhoto ? "Captured Photo" : "Not Provided"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Audio Recording:</span>
-                  <span>{audioURL ? 'Recorded' : 'Not Provided'}</span>
+                  <span>{audioURL ? "Recorded" : "Not Provided"}</span>
                 </div>
               </div>
               <div className="mt-8 flex justify-between">

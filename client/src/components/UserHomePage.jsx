@@ -1,27 +1,25 @@
+// UserHomePage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { CreditCard, Car, Home } from "lucide-react";
 
 function UserHomePage() {
     const username = "userrrrrr";
     const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
+        const handleScroll = () => setIsScrolled(window.scrollY > 10);
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Example snippet in UserHomePage.jsx
     const handleLogout = () => {
-        localStorage.removeItem("isLoggedIn");
-        console.log("User logged out, login flag removed");
+        logout();
         navigate("/");
     };
-
 
     return (
         <div className="min-h-screen bg-blue-50">
@@ -33,30 +31,10 @@ function UserHomePage() {
                         </span>
                     </div>
                     <div className="hidden lg:flex items-center space-x-6">
-                        <Link
-                            to="/dashboard"
-                            className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
-                        >
-                            Home
-                        </Link>
-                        <Link
-                            to="/my-queries"
-                            className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
-                        >
-                            My Queries
-                        </Link>
-                        <Link
-                            to="/my-appointments"
-                            className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
-                        >
-                            My Appointments
-                        </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
-                        >
-                            Logout
-                        </button>
+                        <Link to="/dashboard" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">Home</Link>
+                        <Link to="/my-queries" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">My Queries</Link>
+                        <Link to="/my-appointments" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">My Appointments</Link>
+                        <button onClick={handleLogout} className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">Logout</button>
                     </div>
                 </div>
             </nav>

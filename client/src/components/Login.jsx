@@ -1,15 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
+import { useAuth } from "../AuthContext";
 
-// Helper to convert dataURL to File
 const dataURLtoFile = (dataurl, filename) => {
-  let arr = dataurl.split(',');
+  let arr = dataurl.split(",");
   let mime = arr[0].match(/:(.*?);/)[1];
   let bstr = atob(arr[1]);
   let n = bstr.length;
   let u8arr = new Uint8Array(n);
-  while(n--){
+  while (n--) {
     u8arr[n] = bstr.charCodeAt(n);
   }
   return new File([u8arr], filename, { type: mime });
@@ -17,30 +18,32 @@ const dataURLtoFile = (dataurl, filename) => {
 
 function Login() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [step, setStep] = useState(1);
-  const [credentials, setCredentials] = useState({ identifier: '', password: '' });
+  const [credentials, setCredentials] = useState({ identifier: "", password: "" });
   const [errors, setErrors] = useState({});
   const [livePhoto, setLivePhoto] = useState(null);
-  const [isEmployee, setIsEmployee] = useState(false); // NEW: state for employee checkbox
+  const [isEmployee, setIsEmployee] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const validateField = (name, value) => {
     let error = "";
-    if (name === 'identifier' && !value.trim())
+    if (name === "identifier" && !value.trim())
       error = "Email or Mobile Number is required.";
-    if (name === 'password' && !value.trim())
+    if (name === "password" && !value.trim())
       error = "Password is required.";
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === 'isEmployee') {
+    if (name === "isEmployee") {
       setIsEmployee(checked);
     } else {
-      setCredentials(prev => ({ ...prev, [name]: value }));
+      setCredentials((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -49,18 +52,10 @@ function Login() {
     validateField(name, value);
   };
 
-  // Modified: if the "I am an Employee" box is checked, immediately redirect to employee login.
   const handleCredentialsSubmit = () => {
-    const err1 = validateField('identifier', credentials.identifier);
-    const err2 = validateField('password', credentials.password);
+    const err1 = validateField("identifier", credentials.identifier);
+    const err2 = validateField("password", credentials.password);
     if (err1 || err2) return;
-    
-    if(isEmployee) {
-      // Redirect to the employee login component/route
-      navigate('/employee/dashboard');
-      return;
-    }
-    
     setStep(2);
   };
 
@@ -81,7 +76,7 @@ function Login() {
     }
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [step, livePhoto]);
@@ -97,7 +92,7 @@ function Login() {
       const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
       setLivePhoto(dataUrl);
       if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject.getTracks().forEach((track) => track.stop());
       }
     }
   };
@@ -110,26 +105,29 @@ function Login() {
   const handleFaceAuth = async () => {
     try {
       const formData = new FormData();
-      formData.append('password', credentials.password);
-      // Send identifier as email or phoneNumber based on its content
-      if (credentials.identifier.includes('@')) {
-        formData.append('email', credentials.identifier);
+      formData.append("password", credentials.password);
+      if (credentials.identifier.includes("@")) {
+        formData.append("email", credentials.identifier);
       } else {
-        formData.append('phoneNumber', credentials.identifier);
+        formData.append("phoneNumber", credentials.identifier);
       }
       if (!livePhoto) {
         console.error("No live photo captured");
         alert("No live photo captured");
         return;
       }
-      // Convert livePhoto (JPEG) to File named "face.jpg"
       const faceFile = dataURLtoFile(livePhoto, "face.jpg");
-      formData.append('face_img', faceFile);
-      console.log("Sending login request with formData:", formData);
-      const response = await fetch("http://localhost:5555/auth/login", {
+      formData.append("face_img", faceFile);
+
+      // Choose endpoint based on checkbox state:
+      const endpoint = isEmployee
+        ? "http://localhost:5555/auth/worker/login"
+        : "http://localhost:5555/auth/customer/login";
+
+      const response = await fetch(endpoint, {
         method: "POST",
-        credentials: 'include',
-        body: formData
+        credentials: "include",
+        body: formData,
       });
       const result = await response.json();
       if (!response.ok) {
@@ -137,9 +135,8 @@ function Login() {
         alert("Login failed: " + result.message);
         return;
       }
-      console.log("Login successful:", result);
-      localStorage.setItem("isLoggedIn", "true");
-      navigate('/dashboard');
+      await refreshUser();
+      navigate(isEmployee ? "/employee/dashboard" : "/dashboard");
     } catch (error) {
       console.error("Error during login:", error);
       alert("An error occurred during login. Check console for details.");
@@ -147,19 +144,19 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50">
+    <div className="min-h-screen w-full flex flex-col bg-blue-50">
       <div className="flex items-center justify-between p-4">
         <h2 className="text-3xl font-bold text-gradient">UBI भरोसा</h2>
-        <button onClick={() => navigate('/')} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
+        <button onClick={() => navigate("/")} className="text-lg px-4 py-2 bg-white rounded-full shadow hover:shadow-md">
           Back to Home
         </button>
       </div>
-      <div className="flex-1 relative top-[-25px] flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-gradient-to-b from-white to-gray-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-[85vh] overflow-y-auto my-8"
+          className="relative bg-blue-50 backdrop-blur-lg rounded-2xl shadow-2xl w-full max-w-[900px] p-12 max-h-screen overflow-y-auto"
         >
           <h1 className="text-4xl font-bold text-center text-gradient mb-8 pb-2">Login</h1>
           {step === 1 && (
@@ -167,7 +164,7 @@ function Login() {
               <h2 className="text-2xl font-semibold mb-4">Step 1: Enter Credentials</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block font-medium">Email or Mobile Number</label>
+                  <label className="block font-medium text-lg">Email or Mobile Number</label>
                   <input
                     type="text"
                     name="identifier"
@@ -178,27 +175,35 @@ function Login() {
                   />
                   {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
                 </div>
-                <div>
-                  <label className="block font-medium">Password</label>
+                <div className="relative">
+                  <label className="block font-medium text-lg">Password</label>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={credentials.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-md"
+                    className="w-full p-3 pr-12 border border-gray-300 rounded-md"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    name="isEmployee" 
-                    checked={isEmployee} 
-                    onChange={handleChange} 
-                    className="mr-2" 
+                <div className="flex items-center space-x-3">
+                  <motion.input
+                    type="checkbox"
+                    name="isEmployee"
+                    checked={isEmployee}
+                    onChange={handleChange}
+                    className="w-6 h-6 accent-blue-600"
+                    whileTap={{ scale: 1.2 }}
                   />
-                  <span className="text-sm">I am an Employee</span>
+                  <span className="text-lg">Remember Me (Employee Login)</span>
                 </div>
               </div>
               <div className="mt-8 flex justify-end">
