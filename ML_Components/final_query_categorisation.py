@@ -1,86 +1,38 @@
 """
-install these dependencies before running the code:
-    
-    pip install openai-whisper torch pandas pydub moviepy scikit-learn
+categorization.py
 
-Note: pydub and moviepy require ffmpeg. Make sure ffmpeg is installed 
+This module handles query categorization using a machine learning model.
+It automatically checks if the input is a file path (audio/video) to be transcribed
+or a direct text query, then categorizes accordingly.
+Install the following dependencies before running:
+    
+    pip install pandas scikit-learn pickle-mixin
 """
 
 import os
 import re
 import string
-import whisper
+import pickle
 import pandas as pd
-from pydub import AudioSegment
-from moviepy.editor import VideoFileClip
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-import pickle
+
+# Import transcription module to handle audio/video queries
+import transcription
 
 MODEL_FILE_PATH = "categorization_model.pkl"
 
-# -------------- 🔹 Step 1: Audio/Video Transcription using Whisper 🔹 -------------- #
-def extract_audio(input_path, output_audio_path="converted_audio.wav"):
-    """Extracts audio from a video or converts an existing audio file to WAV (16kHz mono)."""
-    file_ext = os.path.splitext(input_path)[-1].lower()
-
-    # If the input is a video, extract audio
-    if file_ext in [".mp4", ".avi", ".mov", ".mkv", ".flv"]:
-        try:
-            print("Detected video file. Extracting audio...")
-            video = VideoFileClip(input_path)
-            audio = video.audio
-            audio.write_audiofile(output_audio_path, logger=None)
-            video.close()
-            input_path = output_audio_path  # Set the extracted audio as input for conversion
-        except Exception as e:
-            print("Error extracting audio:", e)
-            return None
-
-    # Process the audio file (or the extracted audio) to convert it to 16 kHz mono WAV format
-    try:
-        print("Converting to 16 kHz mono for Whisper...")
-        audio = AudioSegment.from_file(input_path)
-        audio = audio.set_frame_rate(16000).set_channels(1)
-        converted_audio_path = "converted_audio.wav"
-        audio.export(converted_audio_path, format="wav")
-        return converted_audio_path
-    except Exception as e:
-        print("Error processing audio:", e)
-        return None
-
-def transcribe_audio_whisper(audio_path, model_size="base"):
-    """Transcribes audio using OpenAI's Whisper model."""
-    try:
-        print("Loading Whisper model...")
-        model = whisper.load_model(model_size)
-        print("Transcribing audio...")
-        result = model.transcribe(audio_path)
-        return result["text"]
-    except Exception as e:
-        print("Error during transcription:", e)
-        return None
-
-def process_file(input_path):
-    """Processes audio/video: Extracts, transcribes, and returns text."""
-    audio_path = extract_audio(input_path)
-    if audio_path:
-        transcript = transcribe_audio_whisper(audio_path)
-        if transcript:
-            print("Transcription:", transcript)
-            return transcript  # Return text for further processing
-    return None
-
-# -------------- 🔹 Step 2: Train & Build Query Categorization Model 🔹 -------------- #
 def preprocess_text(text):
-    """Preprocesses text by lowercasing, removing digits, punctuation, and extra spaces."""
+    """
+    Preprocesses text by lowercasing, removing digits, punctuation, and extra spaces.
+    """
     text = text.lower()
-    text = re.sub(r'\d+', '', text)  # Remove numbers
-    text = text.translate(str.maketrans("", "", string.punctuation))  # Remove punctuation
-    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    text = re.sub(r'\s+', ' ', text).strip()
     return text
 
 def train_categorization_model():
@@ -382,8 +334,8 @@ def train_categorization_model():
     label_encoder = LabelEncoder()
     df["Category"] = label_encoder.fit_transform(df["Category"])
 
-    # Train-Test Split (not used for prediction but useful if you want to evaluate)
-    X_train, X_test, y_train, y_test = train_test_split(
+    # Train-Test split (optional for evaluation)
+    X_train, _, y_train, _ = train_test_split(
         df["Query"], df["Category"], test_size=0.2, random_state=42, stratify=df["Category"]
     )
 
@@ -399,9 +351,8 @@ def train_categorization_model():
 def load_or_train_model():
     """
     Loads the pretrained categorization model from file if available.
-    Otherwise, trains the model and saves it to disk.
-    Returns:
-        A tuple of (pipeline, label_encoder)
+    Otherwise, trains the model and saves it.
+    Returns a tuple of (pipeline, label_encoder).
     """
     if os.path.exists(MODEL_FILE_PATH):
         print("Loading pretrained categorization model...")
@@ -416,48 +367,60 @@ def load_or_train_model():
             pickle.dump(model_data, f)
         return pipeline, label_encoder
 
-# Load or train the model once at module load time
+# Load or train model on module import
 PIPELINE, LABEL_ENCODER = load_or_train_model()
 
-def classify_query_ml(query):
-    """Classifies a text query into a department using the pretrained model."""
-    query = preprocess_text(query)
-    category_index = PIPELINE.predict([query])[0]
+def classify_query(text_query):
+    """
+    Classifies a text query into a department.
+    """
+    processed_query = preprocess_text(text_query)
+    category_index = PIPELINE.predict([processed_query])[0]
     return LABEL_ENCODER.inverse_transform([category_index])[0]
 
-# -------------- 🔹 Step 3: Integrate Transcription & Classification into a Function 🔹 -------------- #
-def run_categorization(input_path: str) -> dict:
+def process_input(input_data):
     """
-    End-to-end function to process an audio/video query.
-    1. Extracts & transcribes speech.
-    2. Classifies the transcribed text into a department.
-    3. Returns a dictionary with the transcription and redirection result.
-
-    Args:
-        input_path: File path for the input audio/video file.
+    Processes the input data for categorization.
     
-    Returns:
-        Dictionary with keys 'transcribed_text' and 'department'.
+    If the input_data is a file path (i.e. a file exists at that location), it is treated
+    as an audio/video query and the transcription module is invoked to obtain the text.
+    Otherwise, input_data is assumed to be a direct text query.
+    
+    Returns a dictionary with the transcription (if applicable), the department, and a message.
     """
-    transcribed_text = process_file(input_path)
-    if transcribed_text:
-        department = classify_query_ml(transcribed_text)
-        result = {
-            "transcribed_text": transcribed_text,
-            "department": department,
-            "message": "Query processed successfully."
-        }
+    if isinstance(input_data, str) and os.path.exists(input_data):
+        # Input is a file path
+        print("Input detected as file. Processing transcription...")
+        transcribed_text = transcription.process_file(input_data)
+        if not transcribed_text:
+            return {
+                "transcribed_text": None,
+                "department": None,
+                "message": "Could not process file input."
+            }
+        query_text = transcribed_text
     else:
-        result = {
-            "transcribed_text": None,
-            "department": None,
-            "message": "Could not process query."
-        }
-    return result
+        # Assume input is direct text
+        #print("Input detected as direct text query.")
+        query_text = input_data
 
-# ---------------- Example Usage ---------------- #
+    # Classify the query
+    department = classify_query(query_text)
+    return {
+        "transcribed_text": query_text if os.path.exists(input_data) else None,
+        "department": department,
+        "message": "Query processed successfully."
+    }
+
 if __name__ == "__main__":
-    # Replace with your actual file path (audio/video file)
-    file_path = "put your file path hereeee"
-    output = run_categorization(file_path)
-    print("Final Output:", output)
+    # Example usage:
+    
+    # 1. For an audio/video file (provide the correct file path):
+    file_path = ""  # Replace with your actual file path
+    result_file = process_input(file_path)
+    print("File Input Result:", result_file)
+
+    # 2. For a direct text query:
+    text_query = "Can you help me apply for a personal loan?"
+    result_text = process_input(text_query)
+    print("Direct Text Query Result:", result_text)
