@@ -5,5 +5,5 @@ __pycache__
 requirements.txt
 synthetic_customer_data.csv
 .env
-
+query_classifier.pkl
 

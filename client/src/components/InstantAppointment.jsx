@@ -70,14 +70,7 @@ const InstantAppointment = () => {
               <div className="flex justify-center mb-8">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
               </div>
-              <p className="text-gray-600">
-                While you wait: personalized recommendations
-              </p>
-              <div className="mt-8">
-                <button className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all">
-                  View service ticket
-                </button>
-              </div>
+
             </div>
           ) : (
             <div className="text-center">
