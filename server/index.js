@@ -23,6 +23,7 @@ app.use(express.json());
 
 app.use("/auth/customer", authRouterCustomer);
 app.use("/auth/worker", authRouterWorker);
+app.use("/auth/otp", require("./routes/otp/otpRoutes"));
 app.get("/auth/verify", authenticateJWT, verify);
 
 app.use("/ticket/add", addTicketRouter);
