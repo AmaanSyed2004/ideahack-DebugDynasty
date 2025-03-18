@@ -1,28 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Clock, Loader, ArrowRight } from "lucide-react";
-
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { useTicket } from "../context/TicketContext";
+import axios from "axios";
 const InstantAppointment = () => {
+  const navigate = useNavigate();
+  const {
+    currentTicket,
+    resolveTicket,
+    startPolling,
+    estimatedTime,
+    meetingRoom,
+  } = useTicket();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [meetLink, setMeetLink] = useState("");
-
+  const [pollingStarted, setPollingStarted] = useState(false);
+  const [status, setStatus]= useState(false)
+  // Listen to scroll for navbar effect
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      setMeetLink("https://meet.ubi.com/xyz123"); 
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Start ticket resolution and polling when currentTicket is available.
+  useEffect(()=>{
+    const check= async()=>{
+      try{
+        const response = await axios.get(
+          `http://localhost:5555/ticket/queue/checkStatus?ticketID=${currentTicket}`,
+          { withCredentials: true }
+        );
+        setStatus(response.data.alloted)
+      }
+      catch(error){
+        console.error("Error polling ticket status:", error);
+        return false;
+      }
+    }
+    const interval= setInterval(check,1000)
+    return ()=>clearInterval(interval)
+  },[currentTicket.ticketId])
   return (
     <div className="min-h-screen bg-blue-50">
       <nav
@@ -66,11 +84,13 @@ const InstantAppointment = () => {
               <h2 className="text-2xl font-bold text-blue-900 mb-4">
                 Waiting for response!
               </h2>
-              <p className="text-gray-600 mb-8">Estimated time: 10 min</p>
+              <p className="text-gray-600 mb-8">
+                Estimated time:{" "}
+                {estimatedTime ? estimatedTime : "Calculating..."}
+              </p>
               <div className="flex justify-center mb-8">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
               </div>
-
             </div>
           ) : (
             <div className="text-center">
@@ -82,7 +102,7 @@ const InstantAppointment = () => {
                   Your meeting link is ready:
                 </p>
                 <a
-                  href={meetLink}
+                  href={meetingRoom}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
