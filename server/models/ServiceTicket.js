@@ -32,15 +32,13 @@ const ServiceTicket = sequelize.define('ServiceTicket',{
         type: DataTypes.ENUM('live','appointment'),
         allowNull: true
     },
-    sentiment_score:{
-        type: DataTypes.INTEGER,
-        defaultValue: 50
-    },
+
     priority_score:{
         type: DataTypes.INTEGER,
         defaultValue: 50
     }
     //maybe left: fraud_risk
 })
-
+ServiceTicket.belongsTo(User, { foreignKey: 'userID' });
+ServiceTicket.belongsTo(Department, { foreignKey: 'departmentID' });
 module.exports= ServiceTicket;

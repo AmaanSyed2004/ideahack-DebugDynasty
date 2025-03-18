@@ -37,7 +37,7 @@ function EmployeeDashboard() {
     useEffect(()=>{
         const fetchWorkerData = async () => {
             try {
-                const res = await axios.get("http://localhost:5555/data/",{withCredentials:true});
+                const res = await axios.get("http://localhost:5555/data/worker",{withCredentials:true});
                 setWorkerData(res.data)
             } catch (err) {
                 console.error(err);

@@ -15,7 +15,7 @@ const queueRouter = require("./routes/ticket/queue");
 const appointmentRouter = require("./routes/appointment/appointmentRouter");
 const dataRouter = require("./routes/data/getWorkerData");
 const app = express();
-
+const apiRouter = require("./routes/Recommend/recommend");
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -30,7 +30,7 @@ app.use("/auth/worker", authRouterWorker);
 app.get("/auth/verify", authenticateJWT, verify);
 app.use("/auth/otp", otpRouter);
 
-app.use("/api", recommend);
+app.use("/api", apiRouter);
 
 app.use("/ticket/add", addTicketRouter);
 app.use('/ticket/resolve', resolutionRouter);
