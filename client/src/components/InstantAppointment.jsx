@@ -24,23 +24,26 @@ const InstantAppointment = () => {
   }, []);
 
   // Start ticket resolution and polling when currentTicket is available.
-  useEffect(()=>{
-    const check= async()=>{
-      try{
+  useEffect(() => {
+    const check = async () => {
+      try {
         const response = await axios.get(
           `http://localhost:5555/ticket/queue/checkStatus?ticketID=${currentTicket}`,
           { withCredentials: true }
         );
-        setStatus(response.data.alloted)
-      }
-      catch(error){
+        setStatus(response.data.alloted);
+        if (response.data.alloted) {
+          clearInterval(interval);
+          setIsLoading(false);
+        }
+      } catch (error) {
         console.error("Error polling ticket status:", error);
         return false;
       }
-    }
-    const interval= setInterval(check,1000)
-    return ()=>clearInterval(interval)
-  },[currentTicket.ticketId])
+    };
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [currentTicket.ticketId]);
   return (
     <div className="min-h-screen bg-blue-50">
       <nav
@@ -102,7 +105,7 @@ const InstantAppointment = () => {
                   Your meeting link is ready:
                 </p>
                 <a
-                  href={meetingRoom}
+                  href={"https://meet.google.com/"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all"
