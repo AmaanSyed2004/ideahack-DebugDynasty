@@ -11,7 +11,7 @@ import {
     CheckCircle,
     AlertCircle,
 } from "lucide-react";
-
+import axios from "axios";
 function EmployeeDashboard() {
     const { user, logout } = useAuth();
     const employeeName = user ? user.fullName : "Employee";
@@ -29,43 +29,63 @@ function EmployeeDashboard() {
         logout();
         navigate("/");
     };
-    
-
-        const liveQueries = [
-            {
-                id: "UBI123456",
-                customerName: "test pratham",
-                type: "Account Services",
-                status: "Waiting",
-                time: "10:30 AM",
-                priority: "High",
-            },
-            {
-                id: "UBI123457",
-                customerName: "test varnika",
-                type: "Loan Enquiry",
-                status: "In Progress",
-                time: "10:45 AM",
-                priority: "Medium",
-            },
-        ];
-
-        const todayAppointments = [
-            {
-                id: 1,
-                customerName: "test amaan",
-                time: "11:00 AM",
-                type: "Video Call",
-                status: "Scheduled",
-            },
-            {
-                id: 2,
-                customerName: "test keshav",
-                time: "2:30 PM",
-                type: "Instant Query",
-                status: "Pending",
-            },
-        ];
+    const[workerData,setWorkerData]=useState({
+        activeUsersCount:0,
+        pendingQueriesCount:0,
+        pendingAppointmentsCount:0
+    });
+    useEffect(()=>{
+        const fetchWorkerData = async () => {
+            try {
+                const res = await axios.get("http://localhost:5555/data/",{withCredentials:true});
+                setWorkerData(res.data)
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchWorkerData();
+    }, [])
+    const [liveQueries,setLiveQueries]=useState([]);
+    useEffect(()=>{
+        const fetchActiveQueries = async()=>{
+            try{
+                const res = await axios.get("http://localhost:5555/ticket/queue/",{withCredentials:true});
+                setLiveQueries(res.data);
+                console.log(res.data);
+            }catch(err){
+                console.error(err);
+            }
+        }
+        fetchActiveQueries();
+    },[])
+    const [todayAppointments, setTodayAppointments] = useState([]);
+    useEffect(()=>{
+        const fetchTodayAppointments = async()=>{
+            try{
+                const res = await axios.get("http://localhost:5555/appointment/worker",{withCredentials:true});
+                setTodayAppointments(res.data.appointments);
+            }catch(err){
+                console.error(err);
+            }
+        }
+        fetchTodayAppointments();
+    },[])
+        // const todayAppointments = [
+        //     {
+        //         id: 1,
+        //         customerName: "test amaan",
+        //         time: "11:00 AM",
+        //         type: "Video Call",
+        //         status: "Scheduled",
+        //     },
+        //     {
+        //         id: 2,
+        //         customerName: "test keshav",
+        //         time: "2:30 PM",
+        //         type: "Instant Query",
+        //         status: "Pending",
+        //     },
+        // ];
 
         return (
             <div className="min-h-screen bg-blue-50">
@@ -124,7 +144,7 @@ function EmployeeDashboard() {
                                             Active Users
                                         </h3>
                                     </div>
-                                    <p className="text-3xl font-bold text-blue-600">24</p>
+                                    <p className="text-3xl font-bold text-blue-600">{workerData.activeUsersCount}</p>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-lg">
                                     <div className="flex items-center space-x-4 mb-4">
@@ -135,7 +155,7 @@ function EmployeeDashboard() {
                                             Pending Queries
                                         </h3>
                                     </div>
-                                    <p className="text-3xl font-bold text-green-600">12</p>
+                                    <p className="text-3xl font-bold text-green-600">{workerData.pendingQueriesCount}</p>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-lg">
                                     <div className="flex items-center space-x-4 mb-4">
@@ -146,7 +166,7 @@ function EmployeeDashboard() {
                                             Today's Appointments
                                         </h3>
                                     </div>
-                                    <p className="text-3xl font-bold text-purple-600">8</p>
+                                    <p className="text-3xl font-bold text-purple-600"> {workerData.pendingAppointmentsCount}</p>
                                 </div>
                             </div>
                         </div>
@@ -209,33 +229,31 @@ function EmployeeDashboard() {
                                 <div className="space-y-4">
                                     {todayAppointments.map((appointment) => (
                                         <div
-                                            key={appointment.id}
+                                            key={appointment.appointmentID}
                                             className="p-4 border-2 border-gray-100 rounded-xl hover:border-blue-200 transition-colors"
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="font-medium text-gray-900">
-                                                    {appointment.customerName}
+                                                <span className="font-medium text-gray-00">
+                                                    Customer ID: {appointment.customerID}
                                                 </span>
                                                 <div className="flex items-center">
-                                                    {appointment.type === "Video Call" ? (
+
                                                         <Video className="h-4 w-4 text-blue-600 mr-2" />
-                                                    ) : (
-                                                        <MessageSquare className="h-4 w-4 text-green-600 mr-2" />
-                                                    )}
+
                                                     <span className="text-sm text-gray-600">
-                                                        {appointment.type}
+                                                        Video
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between text-sm text-gray-600">
-                                                <span>{appointment.time}</span>
+                                                <span>{appointment.timeSlot}</span>
                                                 <span
-                                                    className={`flex items-center ${appointment.status === "Scheduled"
+                                                    className={`flex items-center ${appointment.status === "scheduled"
                                                             ? "text-green-600"
                                                             : "text-yellow-600"
                                                         }`}
                                                 >
-                                                    {appointment.status === "Scheduled" ? (
+                                                    {appointment.status === "scheduled" ? (
                                                         <CheckCircle className="h-4 w-4 mr-1" />
                                                     ) : (
                                                         <AlertCircle className="h-4 w-4 mr-1" />

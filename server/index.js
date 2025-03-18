@@ -13,6 +13,7 @@ const otpRouter = require("./routes/otp/otpRoutes");
 const resolutionRouter = require("./routes/ticket/resolution");
 const queueRouter = require("./routes/ticket/queue");
 const appointmentRouter = require("./routes/appointment/appointmentRouter");
+const dataRouter = require("./routes/data/getWorkerData");
 const app = express();
 
 app.use(
@@ -35,6 +36,8 @@ app.use('/ticket/resolve', resolutionRouter);
 app.use("/ticket/queue", queueRouter);
 
 app.use("/appointment", appointmentRouter)
+
+app.use('/data', dataRouter)
 sequelize
   .sync({ alter: true })
   .then(() => {
