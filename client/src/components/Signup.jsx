@@ -1,5 +1,5 @@
 /* Signup.jsx */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -129,7 +129,6 @@ function Signup() {
     email: "",
     password: "",
     aadhaarNumber: "",
-    panNumber: "",
     passportPhoto: null,
     audioRecording: null
   });
@@ -144,6 +143,11 @@ function Signup() {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
+
+  // New state and refs for live photo capture
+  const [livePhoto, setLivePhoto] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const validateField = (name, value) => {
     let error = "";
@@ -174,11 +178,6 @@ function Signup() {
         if (!value.trim()) error = "Aadhaar Number is required.";
         else if (!/^\d{12}$/.test(value.trim()))
           error = "Aadhaar must be 12 digits.";
-        break;
-      case "panNumber":
-        if (!value.trim()) error = "PAN Number is required.";
-        else if (!/^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/.test(value.trim()))
-          error = "Enter a valid PAN number (e.g., ABCDE1234F).";
         break;
       default:
         break;
@@ -213,23 +212,19 @@ function Signup() {
     }
     if (step === 2) {
       const err1 = validateField("aadhaarNumber", formData.aadhaarNumber);
-      const err2 = validateField("panNumber", formData.panNumber);
-      if (err1 || err2) return;
+      if (err1) return;
       if (!otpVerified) {
         toast.error("Please verify your phone number via OTP before continuing.");
         return;
       }
     }
     if (step === 3) {
-      if (!formData.passportPhoto) {
-        setErrors((prev) => ({ ...prev, passportPhoto: "Please provide a passport photo." }));
+      if (!livePhoto) {
+        setErrors((prev) => ({ ...prev, passportPhoto: "Please capture a live photo." }));
         return;
       }
-      if (!audioURL) {
-        setErrors((prev) => ({ ...prev, audioRecording: "Please record audio as instructed." }));
-        return;
-      }
-      setFormData((prev) => ({ ...prev, audioRecording: audioURL }));
+      // Save the captured live photo in formData (it will later be converted to a file)
+      setFormData((prev) => ({ ...prev, passportPhoto: livePhoto, audioRecording: audioURL }));
     }
     setStep(step + 1);
   };
@@ -243,13 +238,15 @@ function Signup() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      let photoFile = formData.passportPhoto;
       if (!audioBlob) {
         toast.error("Please record audio as instructed.");
         return;
       }
       const wavBlob = await convertWebmToWav(audioBlob);
       const audioFile = new File([wavBlob], "audio.wav", { type: "audio/wav" });
+      
+      // Convert live photo dataURL to a File for submission
+      const photoFile = dataURLtoFile(formData.passportPhoto, "livePhoto.jpg");
 
       const formDataToSend = new FormData();
       formDataToSend.append("fullName", formData.fullNameAadhaar);
@@ -316,6 +313,7 @@ function Signup() {
     setAudioBlob(null);
   };
 
+  // (Deprecated) Remove uploaded photo function – no longer used
   const handleRemoveUploadedPhoto = () => {
     setFormData((prev) => ({ ...prev, passportPhoto: null }));
     if (fileInputRef.current) {
@@ -375,6 +373,50 @@ function Signup() {
     }
   };
 
+  // Live Photo Capture functions (replacing the upload option)
+  useEffect(() => {
+    let stream;
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        toast.error("Error accessing camera.");
+      }
+    }
+    if (step === 3 && !livePhoto) {
+      startCamera();
+    }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [step, livePhoto]);
+
+  const handleCaptureLivePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
+      setLivePhoto(dataUrl);
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+      }
+    }
+  };
+
+  const handleRedoPhoto = () => {
+    setLivePhoto(null);
+  };
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-r from-blue-100 to-red-50 font-roboto relative">
       <Toaster position="top-right" />
@@ -409,7 +451,7 @@ function Signup() {
               <div className="space-y-5">
                 <div>
                   <label className="block font-medium text-lg">
-                    Full Name (as per Aadhaar/PAN)
+                    Full Name (as per Aadhaar)
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -497,7 +539,7 @@ function Signup() {
           )}
           {step === 2 && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar & PAN Verification</h2>
+              <h2 className="text-2xl font-semibold mb-4">Step 2: Aadhaar Verification</h2>
               <div className="space-y-5">
                 <div>
                   <label className="block font-medium text-lg">Enter Aadhaar Number</label>
@@ -514,23 +556,6 @@ function Signup() {
                   </div>
                   {errors.aadhaarNumber && (
                     <p className="text-red-500 text-sm mt-1">{errors.aadhaarNumber}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block font-medium text-lg">Enter PAN Number</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                      type="text"
-                      name="panNumber"
-                      value={formData.panNumber}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className="w-full pl-10 p-3 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  {errors.panNumber && (
-                    <p className="text-red-500 text-sm mt-1">{errors.panNumber}</p>
                   )}
                 </div>
               </div>
@@ -590,35 +615,36 @@ function Signup() {
             <div>
               <h2 className="text-2xl font-semibold mb-4">Step 3: Identity Authentication (Facial & Audio)</h2>
               <div className="space-y-6">
-                {/* Photo Upload */}
+                {/* Live Photo Capture (replacing file upload) */}
                 <div>
                   <label className="block font-medium mb-2">
-                    Upload Passport Photo{" "}
-                    <Camera className="inline ml-1" size={18} />
+                    Capture Live Photo <Camera className="inline ml-1" size={18} />
                   </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    name="passportPhoto"
-                    accept="image/*"
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                  {formData.passportPhoto && (
-                    <div className="flex flex-col items-center">
-                      <img
-                        src={URL.createObjectURL(formData.passportPhoto)}
-                        alt="Uploaded"
-                        className="w-full h-80 object-cover rounded-md"
-                      />
+                  <div className="relative w-full h-80 bg-black rounded-md overflow-hidden">
+                    {!livePhoto ? (
+                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={livePhoto} alt="Live Capture" className="w-full h-full object-cover" />
+                    )}
+                    <canvas ref={canvasRef} className="hidden" />
+                  </div>
+                  <div className="mt-4 flex justify-center">
+                    {!livePhoto ? (
                       <button
-                        onClick={handleRemoveUploadedPhoto}
-                        className="mt-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                        onClick={handleCaptureLivePhoto}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
                       >
-                        Remove Uploaded Photo
+                        <Camera className="inline mr-2" size={20} /> Capture Live Photo
                       </button>
-                    </div>
-                  )}
+                    ) : (
+                      <button
+                        onClick={handleRedoPhoto}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition"
+                      >
+                        <Camera className="inline mr-2" size={20} /> ReCapture
+                      </button>
+                    )}
+                  </div>
                   {errors.passportPhoto && (
                     <p className="text-red-500 text-sm mt-1">{errors.passportPhoto}</p>
                   )}
@@ -709,12 +735,8 @@ function Signup() {
                   <span>{formData.aadhaarNumber}</span>
                 </div>
                 <div className="flex justify-between border-b pb-2">
-                  <span className="font-medium">PAN Number:</span>
-                  <span>{formData.panNumber}</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
                   <span className="font-medium">Photo:</span>
-                  <span>{formData.passportPhoto ? formData.passportPhoto.name : "Not Provided"}</span>
+                  <span>{formData.passportPhoto ? "Live Photo Captured" : "Not Provided"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Audio Recording:</span>
