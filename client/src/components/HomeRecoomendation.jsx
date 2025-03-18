@@ -30,8 +30,8 @@ const HomeRecommendation = React.forwardRef((props, ref) => {
     const fetchRecommendations = async () => {
       try {
         const response = await axios.post(
-          "http://localhost:3001/api/recommend"
-        );
+          "http://localhost:5555/api/recommend"
+        ,{},{withCredentials:true});
         const fetchedLoans = response.data.top_3_loans || [];
 
         // Map fetched loans to include icons and descriptions

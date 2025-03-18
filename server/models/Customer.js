@@ -30,7 +30,29 @@ const Customer = sequelize.define(
   },
   {
     timestamps: true,
+    hooks: {
+      beforeCreate: (customer, options) => {
+        // Set random values before creating a new Customer record
+        
+        customer.total_assets = generateRandomDecimal(1000, 100000);
+        customer.credit_score = generateRandomInteger(300, 850);
+        customer.active_loans = generateRandomInteger(0, 5);
+        customer.total_loan_amount = generateRandomDecimal(1000, 50000);
+        customer.missed_payments = generateRandomInteger(0, 20);
+        customer.net_monthly_income = generateRandomDecimal(2000, 10000);
+        customer.account_age_years = generateRandomInteger(1, 20);
+        customer.monthly_transactions = generateRandomInteger(50, 500);
+        customer.high_value_transactions = generateRandomInteger(0, 10);
+      }
+    }
   }
 );
 
+function generateRandomDecimal(min, max) {
+  return (Math.random() * (max - min) + min).toFixed(2);  // Return a random decimal between min and max
+}
+
+function generateRandomInteger(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);  // Return a random integer between min and max
+}
 module.exports= Customer;
