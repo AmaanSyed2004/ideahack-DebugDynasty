@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CreditCard, Car, Home } from "lucide-react";
+import HomeRecommendation from "./HomeRecoomendation";
 
 function UserHomePage() {
   // Fetch user name from AuthContext instead of hardcoding
@@ -94,44 +95,7 @@ function UserHomePage() {
         </div>
         <section className="mt-20">
           <div className="container mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-gradient mb-16">
-              Personalized Recommendations
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
-                <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
-                  <CreditCard className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-blue-900 mb-4">
-                  Credit Loans
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Explore flexible credit options tailored for you.
-                </p>
-              </div>
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
-                <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
-                  <Car className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-blue-900 mb-4">
-                  Car Loans
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Get your dream car with our competitive loan offers.
-                </p>
-              </div>
-              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-shadow">
-                <div className="bg-blue-50 p-4 rounded-2xl inline-block mb-6">
-                  <Home className="h-10 w-10 md:h-12 md:w-12 text-blue-600" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-blue-900 mb-4">
-                  Home Loans
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Discover the best rates to finance your new home.
-                </p>
-              </div>
-            </div>
+            <HomeRecommendation/>
           </div>
         </section>
       </main>

@@ -68,7 +68,7 @@ const generateVideoTicket = async (req, res) => {
     // Convert .webm to .mp4 using FFmpeg (asynchronously)
     const mp4Path = filePath.replace(".webm", ".mp4");
     exec(
-      `"C:\\DOCS_DOWN\\ffmpeg-7.1.1-full_build\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.exe" -y -i "${filePath}" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k "${mp4Path}"`,
+      `"C:\\ffmpeg\\bin\\ffmpeg.exe" -y -i "${filePath}" -c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k "${mp4Path}"`,
       (err, stdout, stderr) => {
         if (err) {
           console.error("Error converting .webm to .mp4:", err);
