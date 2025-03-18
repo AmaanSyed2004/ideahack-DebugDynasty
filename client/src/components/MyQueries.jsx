@@ -10,11 +10,13 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-
+import axios from "axios";
 const MyQueries = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [expandedQuery, setExpandedQuery] = useState(null);
-  const [queries, setQueries] = useState([]);
+  const [queries, setQueries] = useState({
+    tickets: [],
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,24 +27,11 @@ const MyQueries = () => {
   }, []);
 
   useEffect(() => {
-    setQueries([
-      {
-        ticketNumber: "TCK12345",
-        category: "Tax Filing Issue",
-        submissionType: "text",
-        timestamp: Date.now(),
-        status: "active",
-        response: "Your query is being reviewed.",
-      },
-      {
-        ticketNumber: "TCK67890",
-        category: "GST Registration",
-        submissionType: "audio",
-        timestamp: Date.now() - 86400000,
-        status: "pending",
-        response: "We will update you soon.",
-      },
-    ]);
+    const fetchQueries= async()=>{
+      const response = await axios.get("http://localhost:5555/data/tickets",{withCredentials:true});
+      setQueries(response.data);
+    };
+    fetchQueries();
   }, []);
 
   const getSubmissionTypeIcon = (type) => {
@@ -100,10 +89,10 @@ const MyQueries = () => {
               Home
             </Link>
             <Link
-              to="/my-queries"
+              to="/my-tickets"
               className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
             >
-              My Queries
+              My ticket history
             </Link>
             <Link
               to="/my-appointments"
@@ -117,8 +106,9 @@ const MyQueries = () => {
 
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-blue-900 mb-8">My Queries</h1>
-          {queries.length === 0 ? (
+          <h1 className="text-3xl font-bold text-blue-900 mb-8">My ticket history</h1>
+          
+          {queries.tickets.length === 0 ? (
             <p className="text-center text-gray-600 text-lg">
               No queries found
             </p>

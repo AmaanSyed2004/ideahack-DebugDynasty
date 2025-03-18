@@ -1,51 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  Calendar,
-  Clock,
-  Video,
-  ArrowRight,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { Calendar, Clock, Video, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import axios from 'axios';
 
 const Appointments = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      type: "instant",
-      status: "upcoming",
-      date: "2025-03-20",
-      time: "10:00",
-      queryTicket: "UBI123456",
-      meetLink: "https://meet.ubi.com/xyz123",
-    },
-    {
-      id: 2,
-      type: "scheduled",
-      status: "completed",
-      date: "2025-03-18",
-      time: "14:30",
-      queryTicket: "UBI123457",
-    },
-    {
-      id: 3,
-      type: "instant",
-      status: "upcoming",
-      date: "2025-03-21",
-      time: "11:00",
-      queryTicket: "UBI123458",
-    },
-    {
-      id: 4,
-      type: "scheduled",
-      status: "cancelled",
-      date: "2025-03-17",
-      time: "16:00",
-      queryTicket: "UBI123459",
-    },
-  ]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,6 +15,21 @@ const Appointments = () => {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await axios.get("http://localhost:5555/appointment/customer/",{withCredentials:true});  // Adjust this URL to your backend endpoint
+        setAppointments(response.data.appointments);
+      } catch (err) {
+        setError("Failed to fetch appointments.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAppointments();
   }, []);
 
   const formatDate = (date) => {
@@ -121,10 +98,10 @@ const Appointments = () => {
               Home
             </Link>
             <Link
-              to="/my-queries"
+              to="/my-tickets"
               className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
             >
-              My Queries
+              My Ticket History
             </Link>
             <Link
               to="/my-appointments"
@@ -152,7 +129,15 @@ const Appointments = () => {
           </div>
 
           <div className="space-y-4">
-            {appointments.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                <p className="text-gray-600 text-lg mb-4">Loading appointments...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12 bg-white rounded-2xl shadow-md">
+                <p className="text-red-600 text-lg mb-4">{error}</p>
+              </div>
+            ) : appointments.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
                 <p className="text-gray-600 text-lg mb-4">
                   No appointments found
@@ -168,17 +153,13 @@ const Appointments = () => {
             ) : (
               appointments.map((appointment) => (
                 <div
-                  key={appointment.id}
+                  key={appointment.appointmentID}
                   className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
                       <div className="bg-blue-100 p-3 rounded-xl">
-                        {appointment.type === "instant" ? (
-                          <Clock className="h-6 w-6 text-blue-600" />
-                        ) : (
                           <Calendar className="h-6 w-6 text-blue-600" />
-                        )}
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-blue-900">
@@ -197,15 +178,15 @@ const Appointments = () => {
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Date</p>
+                      <p className="text-sm text-gray-600 mb-1">Worker ID</p>
                       <p className="text-gray-900">
-                        {formatDate(appointment.date)}
+                        {appointment.workerID}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Time</p>
                       <p className="text-gray-900">
-                        {formatTime(appointment.time)}
+                        {formatTime(appointment.timeSlot)}
                       </p>
                     </div>
                   </div>

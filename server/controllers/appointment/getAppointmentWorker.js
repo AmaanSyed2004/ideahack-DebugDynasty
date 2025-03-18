@@ -6,6 +6,7 @@ const getAppointmentWorker = async (req, res) => {
     }
     const appointments = await Appointment.findAll({
         where: { workerID:userID },
+        
     });
     if (!appointments || appointments.length === 0) {
         return res.status(404).json({

@@ -43,4 +43,8 @@ const Appointment = sequelize.define("Appointment", {
     defaultValue: "scheduled",
   },
 });
+Appointment.belongsTo(Customer, { foreignKey: "customerID" });
+Appointment.belongsTo(Worker, { foreignKey: "workerID" });
+Appointment.belongsTo(Department, { foreignKey: "departmentID" });
+
 module.exports = Appointment;

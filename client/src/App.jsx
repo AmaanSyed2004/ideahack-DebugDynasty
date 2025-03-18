@@ -97,7 +97,7 @@ function App() {
               }
             />
             <Route
-              path="/my-queries"
+              path="/my-tickets"
               element={
                 <ProtectedRoute allowedRoles={["customer"]}>
                   <MyQueries />
