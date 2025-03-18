@@ -55,10 +55,10 @@ const ScheduleAppointment = () => {
                 Home
               </Link>
               <Link
-                to="/my-queries"
+                to="/my-tickets"
                 className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
               >
-                My Queries
+                My Ticket History
               </Link>
               <Link
                 to="/my-appointments"

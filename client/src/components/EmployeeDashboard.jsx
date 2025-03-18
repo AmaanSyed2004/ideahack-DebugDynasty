@@ -45,7 +45,9 @@ function EmployeeDashboard() {
         };
         fetchWorkerData();
     }, [])
-    const [liveQueries,setLiveQueries]=useState([]);
+    const [liveQueries,setLiveQueries]=useState({
+        nextTickets:[]
+    });
     useEffect(()=>{
         const fetchActiveQueries = async()=>{
             try{
@@ -185,7 +187,7 @@ function EmployeeDashboard() {
                                     </Link>
                                 </div>
                                 <div className="space-y-4">
-                                    {liveQueries.map((query) => (
+                                    {/* {liveQueries.nextQueries.map((query) => (
                                         <div
                                             key={query.id}
                                             className="p-4 border-2 border-gray-100 rounded-xl hover:border-blue-200 transition-colors"
@@ -210,7 +212,7 @@ function EmployeeDashboard() {
                                                 <span>{query.time}</span>
                                             </div>
                                         </div>
-                                    ))}
+                                    ))} */}
                                 </div>
                             </div>
 

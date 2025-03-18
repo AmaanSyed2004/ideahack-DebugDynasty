@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { CheckCircle, ArrowLeft, Mic, Video, MessageSquare } from "lucide-react";
+import axios from "axios";
+import {
+  CheckCircle,
+  ArrowLeft,
+  Mic,
+  Video,
+  MessageSquare,
+} from "lucide-react";
 
 const EmployeeLiveQueries = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState(null);
+  const [liveQueries, setLiveQueries] = useState([]);
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -20,45 +28,34 @@ const EmployeeLiveQueries = () => {
     navigate("/");
   };
 
-  const liveQueries = [
-    {
-      id: "UBI123456",
-      priority: 1,
-      serviceTicket: "TICKET-001",
-      details: "Unable to access net banking services",
-      meetLink: "https://meet.ubi.com/xyz123",
-      customerName: "John Doe",
-      status: "Waiting",
-    },
-    {
-      id: "UBI123457",
-      priority: 1,
-      serviceTicket: "TICKET-002",
-      details: "Failed transaction but amount debited",
-      meetLink: "https://meet.ubi.com/abc456",
-      customerName: "Jane Smith",
-      status: "Waiting",
-    },
-    {
-      id: "UBI123458",
-      priority: 2,
-      serviceTicket: "TICKET-003",
-      details: "Home loan application status check",
-      meetLink: "https://meet.ubi.com/def789",
-      customerName: "Alice Johnson",
-      status: "Waiting",
-    },
-    {
-      id: "UBI123459",
-      priority: 3,
-      serviceTicket: "TICKET-004",
-      details: "Information about new savings schemes",
-      meetLink: "https://meet.ubi.com/ghi012",
-      customerName: "Bob Wilson",
-      status: "Waiting",
-    },
-  ];
+  useEffect(() => {
+    const fetchLiveQueries = async () => {
+      try {
+        const response = await axios.get("http://localhost:5555/ticket/queue/",{withCredentials:true}); // Replace with actual path
+        const data = response.data.nextTickets.map((ticket, index) => ({
+          id: ticket.ticketID,
+          priority: ticket.priority_score >= 75
+            ? 1
+            : ticket.priority_score >= 50
+            ? 2
+            : 3,
+          serviceTicket: ticket.ticketID.slice(0, 8).toUpperCase(), // Taking first 8 chars as ticket no
+          details: `Query related to department ${ticket.departmentID}`, // Random description
+          meetLink: `https://meet.ubi.com/${ticket.ticketID.slice(0, 5)}`, // Dummy meet link
+          customerName: `Customer ${index + 1}`, // Dummy customer name
+          status: ticket.status,
+        }));
+        setLiveQueries(data);
+      } catch (err) {
+        console.error("Failed to fetch live queries", err);
+      }
+    };
 
+    fetchLiveQueries();
+  }, []);
+  async function handleClick(){
+    await axios.post("http://localhost:5555/ticket/queue/process", {ticketID: selectedQuery.id},{withCredentials:true});
+  }
   return (
     <div className="min-h-screen bg-blue-50">
       <nav
@@ -108,36 +105,42 @@ const EmployeeLiveQueries = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
-            {liveQueries.map((query) => (
-              <div
-                key={query.id}
-                onClick={() => setSelectedQuery(query)}
-                className={`cursor-pointer bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all ${
-                  selectedQuery?.id === query.id ? "ring-2 ring-blue-500" : ""
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      query.priority === 1
-                        ? "bg-red-100 text-red-600"
-                        : query.priority === 2
-                        ? "bg-yellow-100 text-yellow-600"
-                        : "bg-green-100 text-green-600"
-                    }`}
-                  >
-                    Priority {query.priority}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {query.serviceTicket}
-                  </span>
+            {liveQueries.length === 0 ? (
+              <p className="text-gray-500">No live queries at the moment.</p>
+            ) : (
+              liveQueries.map((query) => (
+                <div
+                  key={query.id}
+                  onClick={() => setSelectedQuery(query)}
+                  className={`cursor-pointer bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all ${
+                    selectedQuery?.id === query.id
+                      ? "ring-2 ring-blue-500"
+                      : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        query.priority === 1
+                          ? "bg-red-100 text-red-600"
+                          : query.priority === 2
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      Priority {query.priority}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {query.serviceTicket}
+                    </span>
+                  </div>
+                  <h3 className="font-medium text-blue-900 mb-2">
+                    {query.customerName}
+                  </h3>
+                  <p className="text-gray-600 text-sm">{query.details}</p>
                 </div>
-                <h3 className="font-medium text-blue-900 mb-2">
-                  {query.customerName}
-                </h3>
-                <p className="text-gray-600 text-sm">{query.details}</p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {selectedQuery ? (
@@ -196,7 +199,7 @@ const EmployeeLiveQueries = () => {
                 </div>
 
                 <div className="flex justify-between pt-6">
-                  <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-xl hover:shadow-lg transition-all">
+                  <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-xl hover:shadow-lg transition-all" onClick={handleClick}>
                     Start
                   </button>
                   <button className="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all">
