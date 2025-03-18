@@ -30,6 +30,7 @@ app.use("/auth/worker", authRouterWorker);
 app.get("/auth/verify", authenticateJWT, verify);
 app.use("/auth/otp", otpRouter);
 
+app.use("/api", recommend);
 
 app.use("/ticket/add", addTicketRouter);
 app.use('/ticket/resolve', resolutionRouter);
