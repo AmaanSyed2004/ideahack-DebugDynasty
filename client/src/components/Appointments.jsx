@@ -8,12 +8,44 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext"; // Get the user from context
 
 const Appointments = () => {
-  const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState([
+    {
+      id: 1,
+      type: "instant",
+      status: "upcoming",
+      date: "2025-03-20",
+      time: "10:00",
+      queryTicket: "UBI123456",
+      meetLink: "https://meet.ubi.com/xyz123",
+    },
+    {
+      id: 2,
+      type: "scheduled",
+      status: "completed",
+      date: "2025-03-18",
+      time: "14:30",
+      queryTicket: "UBI123457",
+    },
+    {
+      id: 3,
+      type: "instant",
+      status: "upcoming",
+      date: "2025-03-21",
+      time: "11:00",
+      queryTicket: "UBI123458",
+    },
+    {
+      id: 4,
+      type: "scheduled",
+      status: "cancelled",
+      date: "2025-03-17",
+      time: "16:00",
+      queryTicket: "UBI123459",
+    },
+  ]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,67 +55,18 @@ const Appointments = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Helper to transform backend appointment data into UI-friendly fields
-  const transformAppointment = (appointment) => {
-    const dateObj = new Date(appointment.timeSlot);
-    const isValidDate = !isNaN(dateObj);
-    const dateStr = isValidDate
-      ? dateObj.toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : appointment.timeSlot;
-    const timeStr = isValidDate
-      ? dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      : appointment.timeSlot;
-
-    return {
-      id: appointment.appointmentID,
-      type: "scheduled", // Adjust if you support multiple types
-      status: appointment.status === "scheduled" ? "upcoming" : appointment.status,
-      date: dateStr,
-      time: timeStr,
-      queryTicket: appointment.queryTicket || "",
-      meetLink: appointment.meetLink || "",
-    };
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
-  // Fetch appointments from backend using the user id in URL params
-  useEffect(() => {
-    if (!user || !user.id) {
-      console.error("User not logged in or missing ID");
-      return;
-    }
-    fetch(`http://localhost:5555/appointment/customer/${user.id}`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch appointments");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data.appointments && Array.isArray(data.appointments)) {
-          const transformed = data.appointments.map(transformAppointment);
-          setAppointments(transformed);
-        } else {
-          setAppointments([]);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }, [user]);
-
-  const formatDate = (date) => date;
-  const formatTime = (time) => time;
+  const formatTime = (time) => {
+    return time;
+  };
 
   const getStatusBadge = (status) => {
     switch (status.toLowerCase()) {
@@ -126,16 +109,27 @@ const Appointments = () => {
       >
         <div className="container mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="transform hover:scale-105 transition-transform">
-            <span className="text-2xl sm:text-3xl font-bold text-gradient">UBI भरोसा</span>
+            <span className="text-2xl sm:text-3xl font-bold text-gradient">
+              UBI भरोसा
+            </span>
           </div>
           <div className="hidden lg:flex items-center space-x-6">
-            <Link to="/dashboard" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">
+            <Link
+              to="/dashboard"
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+            >
               Home
             </Link>
-            <Link to="/my-queries" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">
+            <Link
+              to="/my-queries"
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+            >
               My Queries
             </Link>
-            <Link to="/my-appointments" className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg">
+            <Link
+              to="/my-appointments"
+              className="nav-link text-blue-900 hover:text-red-600 transition-colors text-lg"
+            >
               My Appointments
             </Link>
           </div>
@@ -145,7 +139,9 @@ const Appointments = () => {
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-blue-900">My Appointments</h1>
+            <h1 className="text-3xl font-bold text-blue-900">
+              My Appointments
+            </h1>
             <Link
               to="/raise-query"
               className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-red-600 text-white rounded-full hover:shadow-lg transition-all transform hover:scale-105"
@@ -158,8 +154,13 @@ const Appointments = () => {
           <div className="space-y-4">
             {appointments.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl shadow-md">
-                <p className="text-gray-600 text-lg mb-4">No appointments found</p>
-                <Link to="/raise-query" className="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <p className="text-gray-600 text-lg mb-4">
+                  No appointments found
+                </p>
+                <Link
+                  to="/raise-query"
+                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                >
                   Raise a query to book an appointment
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -197,11 +198,15 @@ const Appointments = () => {
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Date</p>
-                      <p className="text-gray-900">{formatDate(appointment.date)}</p>
+                      <p className="text-gray-900">
+                        {formatDate(appointment.date)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Time</p>
-                      <p className="text-gray-900">{formatTime(appointment.time)}</p>
+                      <p className="text-gray-900">
+                        {formatTime(appointment.time)}
+                      </p>
                     </div>
                   </div>
 
@@ -219,7 +224,8 @@ const Appointments = () => {
                         </a>
                       ) : (
                         <p className="text-sm text-gray-600">
-                          Meeting link will be available 30 minutes before the appointment
+                          Meeting link will be available 30 minutes before the
+                          appointment
                         </p>
                       )}
                     </div>
